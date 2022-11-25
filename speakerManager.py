@@ -4,16 +4,20 @@ import paho.mqtt.publish as mqttpublish
 import requests
 import secrets
 import subprocess
+import threading
+import time
 
 broker_address = secrets.BROKER_ADDRESS
 topicSub = "speaker-message/+/message"
-soundsFolder = "/home/developer/sounds/"
+#soundsFolder = "/home/developer/sounds/"
+soundsFolder = "sounds/"
 apiKey = secrets.API_KEY
 chatId = secrets.CHAT_ID
 mqttUser = secrets.MQTT_USER
 mqttPass = secrets.MQTT_PASS
 clientId = "SpeakerManager"
 client = None
+queueFilesToReproduce = []
 
 savedSpeakers = {
     "nag241":{
@@ -39,11 +43,6 @@ audiosFilename = {
     "tboiS2":"The_Binding_of_Issac_Sacrificial2.wav",
     "Sims4Theme":"The_Sims_4_theme.wav",
 }
-
-#Examples:
-# speaker-message/all/message "OpenGarage"
-# speaker-message/25070A/message "Receta"
-# speaker-message/nag241/message "Welcome Guest"
 
 def sendMessage(topic,message):
     print("Sending:",topic,message)
@@ -87,11 +86,12 @@ def reproduceMessage(speakerId,message):
     switchSpeakersStatus(speakerId,"0")
 
 def on_message(client, userdata, message):
+    global queueFilesToReproduce
     topicRecieved = message.topic
     speakerId = topicRecieved.split("/")[-2]
     messageRecieved = str(message.payload.decode("utf-8"))
     print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
-    reproduceMessage(speakerId,messageRecieved)
+    queueFilesToReproduce.append((speakerId,messageRecieved))
 
 def createMqttClient():
     global client
@@ -102,10 +102,21 @@ def createMqttClient():
     client.connect(broker_address) #connect to broker
     client.subscribe(topicSub)
     print("Mqtt client created.")
-    client.loop_forever() #start the loop
+    #client.loop_forever() #start the loop
+    client.loop_start()
+
+def reproduceThreadLoop():
+   global queueFilesToReproduce
+   print("Executing reproduceThreadLoop")
+   while True:
+       if(len(queueFilesToReproduce)>0):
+           print("Entro")
+           speakerId,message = queueFilesToReproduce.pop(0)
+           reproduceMessage(speakerId,message)
 
 def main():
     print("Starting Speaker Manager...")
     createMqttClient()
+    reproduceThreadLoop()
 
 main()
