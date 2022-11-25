@@ -13,7 +13,7 @@ chatId = secrets.CHAT_ID
 mqttUser = secrets.MQTT_USER
 mqttPass = secrets.MQTT_PASS
 clientId = "SpeakerManager"
-#client = None
+client = None
 
 savedSpeakers = {
     "nag241":{
@@ -47,11 +47,7 @@ audiosFilename = {
 
 def sendMessage(topic,message):
     print("Sending:",topic,message)
-    mqttpublish.single(topic, payload=message, qos=1, retain=False,
-                        hostname=secrets.BROKER_ADDRESS,port=1883, client_id=clientId,
-                        keepalive=60, will=None,
-                        auth={"username":secrets.MQTT_USER,"password":secrets.MQTT_PASS},
-                        tls=None, protocol=mqtt.MQTTv311, transport="tcp")
+    client.publish(topic,message,qos=1,retain=False)
 
 def checkActualStatus(device):
     if(device["type"]=="TASMOTA"):
@@ -98,7 +94,7 @@ def on_message(client, userdata, message):
     reproduceMessage(speakerId,messageRecieved)
 
 def createMqttClient():
-    #global client
+    global client
     print("Configuring Mqtt...")
     client = mqtt.Client(client_id=clientId, clean_session=False, userdata=None, protocol=mqtt.MQTTv311, transport="tcp")
     client.on_message=on_message #attach function to callback
