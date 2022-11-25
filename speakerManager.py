@@ -9,8 +9,8 @@ import time
 
 broker_address = secrets.BROKER_ADDRESS
 topicSub = "speaker-message/+/message"
-#soundsFolder = "/home/developer/sounds/"
-soundsFolder = "sounds/"
+soundsFolder = "/home/developer/sounds/"
+#soundsFolder = "sounds/"
 apiKey = secrets.API_KEY
 chatId = secrets.CHAT_ID
 mqttUser = secrets.MQTT_USER
@@ -82,7 +82,9 @@ def reproduceMessage(speakerId,message):
     if(audioFile==None): return # Close if not filename founded
     print(f"Reproducing Audio: {audioFile}")
     switchSpeakersStatus(speakerId,"1")
+    time.sleep(1.5)
     executeAplay(audioFile)
+    time.sleep(0.5)
     switchSpeakersStatus(speakerId,"0")
 
 def on_message(client, userdata, message):
@@ -110,7 +112,6 @@ def reproduceThreadLoop():
    print("Executing reproduceThreadLoop")
    while True:
        if(len(queueFilesToReproduce)>0):
-           print("Entro")
            speakerId,message = queueFilesToReproduce.pop(0)
            reproduceMessage(speakerId,message)
 
