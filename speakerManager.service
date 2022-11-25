@@ -3,7 +3,7 @@ Description=Speaker monitor service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/python3 -u /home/developer/scripts/speakerMonitor.py
+ExecStart=/usr/local/bin/python3 -u /home/developer/scripts/speaker-manager/speakerManager.py
 WorkingDirectory=/home/developer/scripts/
 StandardOutput=inherit
 StandardError=inherit
