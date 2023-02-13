@@ -9,8 +9,9 @@ import time
 
 broker_address = secrets.BROKER_ADDRESS
 topicSub = "speaker-message/+/message"
-soundsFolder = "/home/developer/sounds/"
-#soundsFolder = "sounds/"
+topicSubStop = "speaker-message/+/stop"
+#soundsFolder = "/home/developer/sounds/"
+soundsFolder = "sounds/"
 apiKey = secrets.API_KEY
 chatId = secrets.CHAT_ID
 mqttUser = secrets.MQTT_USER
@@ -18,6 +19,8 @@ mqttPass = secrets.MQTT_PASS
 clientId = "SpeakerManager"
 client = None
 queueFilesToReproduce = []
+queueFilesToStop = []
+queueFilesPlaying = {}
 
 savedSpeakers = {
     "nag241":{
@@ -72,8 +75,14 @@ def switchSpeakersStatus(speakerId,status):
         sendMessageToSpeaker(speakerId,status)
 
 def executeAplay(audioFile):
+    global queueFilesPlaying
     try:
-        subprocess.run(['aplay', soundsFolder+audioFile])
+        if(queueFilesPlaying.get(audioFile)!=None):
+            print("Audio already executing")
+            killAplayProcess(audioFile)
+        sub_process_aux = subprocess.Popen(['aplay', soundsFolder+audioFile])
+        queueFilesPlaying[audioFile]=sub_process_aux
+            
     except:
         print("[Aplay Error]: An exception occurred using Aplay")
 
@@ -87,13 +96,32 @@ def reproduceMessage(speakerId,message):
     time.sleep(0.5)
     switchSpeakersStatus(speakerId,"0")
 
+def stopMessage(message):
+    global queueFilesPlaying
+    audioFile = audiosFilename.get(message)
+    if(audioFile==None): return # Close if not filename founded
+    killAplayProcess(audioFile)
+
+def killAplayProcess(audioFile):
+    print(f"Stopping Audio file: {audioFile}...")
+    try:
+        sub_process_aux = queueFilesPlaying[audioFile]
+        sub_process_aux.kill()
+        print(f"Stopped")
+    except:
+        print(f"Unable to kill audio file: {audioFile}")
+
 def on_message(client, userdata, message):
     global queueFilesToReproduce
     topicRecieved = message.topic
-    speakerId = topicRecieved.split("/")[-2]
-    messageRecieved = str(message.payload.decode("utf-8"))
-    print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
-    queueFilesToReproduce.append((speakerId,messageRecieved))
+    if(topicRecieved.split("/")[-1] == topicSub.split("/")[-1]):
+        speakerId = topicRecieved.split("/")[-2]
+        messageRecieved = str(message.payload.decode("utf-8"))
+        print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
+        queueFilesToReproduce.append((speakerId,messageRecieved))
+    elif(topicRecieved.split("/")[-1] == topicSubStop.split("/")[-1]):
+        messageRecieved = str(message.payload.decode("utf-8"))
+        queueFilesToStop.append(messageRecieved)
 
 def createMqttClient():
     global client
@@ -103,18 +131,21 @@ def createMqttClient():
     client.username_pw_set(username=mqttUser, password=mqttPass)
     client.connect(broker_address) #connect to broker
     client.subscribe(topicSub)
+    client.subscribe(topicSubStop)
     print("Mqtt client created.")
     #client.loop_forever() #start the loop
     client.loop_start()
 
 def reproduceThreadLoop():
-   global queueFilesToReproduce
-   print("Executing reproduceThreadLoop")
-   while True:
-       if(len(queueFilesToReproduce)>0):
-           speakerId,message = queueFilesToReproduce.pop(0)
-           reproduceMessage(speakerId,message)
-
+    global queueFilesToReproduce
+    print("Executing reproduceThreadLoop")
+    while True:
+        if(len(queueFilesToReproduce)>0):
+            speakerId,message = queueFilesToReproduce.pop(0)
+            reproduceMessage(speakerId,message)
+        if(len(queueFilesToStop)>0):
+            stopMessage(queueFilesToStop.pop(0))
+            
 def main():
     print("Starting Speaker Manager...")
     createMqttClient()
