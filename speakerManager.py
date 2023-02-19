@@ -1,154 +1,182 @@
-import sys
-import paho.mqtt.client as mqtt
-import paho.mqtt.publish as mqttpublish
-import requests
-import secrets
 import subprocess
-import threading
 import time
+from ConfigurationReader import ConfigurationReader
+from SpeakerDevice import SpeakerDevice
+from AudioController import AudioController, AudioRequests, AudioConfig
+from MqttController import MqttController, MqttConfig
 
-broker_address = secrets.BROKER_ADDRESS
-topicSub = "speaker-message/+/message"
-topicSubStop = "speaker-message/+/stop"
-#soundsFolder = "/home/developer/sounds/"
-soundsFolder = "sounds/"
-apiKey = secrets.API_KEY
-chatId = secrets.CHAT_ID
-mqttUser = secrets.MQTT_USER
-mqttPass = secrets.MQTT_PASS
-clientId = "SpeakerManager"
-client = None
-queueFilesToReproduce = []
-queueFilesToStop = []
-queueFilesPlaying = {}
+class SpeakerManager():
+    mqttController = None
+    audioController = None
+    audiosList = []
+    devicesList = []
+    queueFilesPlaying = {}
+    soundsFolder = "sounds/"
 
-savedSpeakers = {
-    "nag241":{
-        "type":"ZARUS",
-        "status":{"0":"0","1":"1"},
-        "template":'{"CID":"1","spst":"%_v%"}',
-        "publishTopic":"speaker-switch/nag241/cmd",
-        "subscribeTopic":"speaker-switch/nag241/cmd"
-    },
-    "25070A":{
-        "type":"TASMOTA",
-        "status":{"0":"OFF","1":"ON"},
-        "template":"%_v%",
-        "publishTopic":"casa/cocina/parlantes/cmnd/25070A/POWER",
-        "subscribeTopic":"casa/cocina/parlantes/stat/25070A/POWER"
-    }
-}
+    def __init__(self):
+        print("Creating Speaker Manager...")
+        self.update_config_values()
 
-audiosFilename = {
-    "CloseGarage":"It's-safe-now-the-garage-door-has-closed.wav",
-    "OpenGarage":"Beware-the-garage-door-has-been-opened.wav",
-    "FeedCats":"comidaGatas.wav",
-    "tboiS2":"The_Binding_of_Issac_Sacrificial2.wav",
-    "Sims4Theme":"The_Sims_4_theme.wav",
-}
+    def update_config_values(self):
+        print("Updating configuration Values")
+        config_data = ConfigurationReader().read_config_file()
+        SpeakerManager.validate_config_values(config_data)
+        #Set Audios
+        self.audioController = AudioController()
+        self.audiosList = self.get_audios_config(config_data)
+        #Set Devices
+        self.devicesList = self.get_devices_config(config_data)
+        #Setting Mqtt config
+        mqtt_config = MqttConfig.from_json(config_data)
+        self.mqttController = MqttController(mqtt_config,self.on_message)
 
-def sendMessage(topic,message):
-    print("Sending:",topic,message)
-    client.publish(topic,message,qos=1,retain=False)
-
-def checkActualStatus(device):
-    if(device["type"]=="TASMOTA"):
-        #Publish
-        pass
-
-def sendMessageToSpeaker(speakerId,status):
-    try:
-        speakerAux = savedSpeakers[speakerId]
-        speakerPublishTopic = speakerAux["publishTopic"]
-        template = speakerAux["template"]
-        statusSelected = speakerAux["status"][status]
-        msg = template.replace("%_v%",statusSelected)
-        sendMessage(speakerPublishTopic,msg)
-    except:
-        print("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speakerId+"] status")
-
-def switchSpeakersStatus(speakerId,status):
-    if(speakerId=="all"):
-        for speakerKey in list(savedSpeakers.keys()):
-            sendMessageToSpeaker(speakerKey,status)
-    else:
-        sendMessageToSpeaker(speakerId,status)
-
-def executeAplay(audioFile):
-    global queueFilesPlaying
-    try:
-        if(queueFilesPlaying.get(audioFile)!=None):
-            print("Audio already executing")
-            killAplayProcess(audioFile)
-        sub_process_aux = subprocess.Popen(['aplay', soundsFolder+audioFile])
-        queueFilesPlaying[audioFile]=sub_process_aux
-            
-    except:
-        print("[Aplay Error]: An exception occurred using Aplay")
-
-def reproduceMessage(speakerId,message):
-    audioFile = audiosFilename.get(message)
-    if(audioFile==None): return # Close if not filename founded
-    print(f"Reproducing Audio: {audioFile}")
-    switchSpeakersStatus(speakerId,"1")
-    time.sleep(1.5)
-    executeAplay(audioFile)
-    time.sleep(0.5)
-    switchSpeakersStatus(speakerId,"0")
-
-def stopMessage(message):
-    global queueFilesPlaying
-    audioFile = audiosFilename.get(message)
-    if(audioFile==None): return # Close if not filename founded
-    killAplayProcess(audioFile)
-
-def killAplayProcess(audioFile):
-    print(f"Stopping Audio file: {audioFile}...")
-    try:
-        sub_process_aux = queueFilesPlaying[audioFile]
-        sub_process_aux.kill()
-        print(f"Stopped")
-    except:
-        print(f"Unable to kill audio file: {audioFile}")
-
-def on_message(client, userdata, message):
-    global queueFilesToReproduce
-    topicRecieved = message.topic
-    if(topicRecieved.split("/")[-1] == topicSub.split("/")[-1]):
+    def get_audios_config(self,config_data):
+        audios = []
+        for audio_data in config_data['audios']:
+            audio_config = AudioConfig.from_json(audio_data)
+            audios.append(audio_config)
+        return audios
+        
+    def get_devices_config(self,config_data):
+        devices = []
+        for device_data in config_data['devices']:
+            try:
+                device = SpeakerDevice.from_json(device_data)
+                devices.append(device)
+            except TypeError:
+                print(f'Error: Invalid device configuration: {device_data}')
+        return devices
+    
+    def on_message(self,client, userdata, message):
+        print("self:",self)
+        print("message:",message)
+        print("topicSubReproduce:",MqttController.topicSubReproduce)
+        topicRecieved = message.topic
+        print("topicRecieved:",topicRecieved)
+        messageRecieved = str(message.payload.decode("utf-8"))
         speakerId = topicRecieved.split("/")[-2]
-        messageRecieved = str(message.payload.decode("utf-8"))
         print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
-        queueFilesToReproduce.append((speakerId,messageRecieved))
-    elif(topicRecieved.split("/")[-1] == topicSubStop.split("/")[-1]):
-        messageRecieved = str(message.payload.decode("utf-8"))
-        queueFilesToStop.append(messageRecieved)
+        audioRequests = AudioRequests(messageRecieved,speakerId)
+        #If is equal to topicSub reproduce
+        a = MqttController.is_reproduce_topic(topicRecieved)
+        print("topicRecieved2:",topicRecieved)
+        print("a:",a)
+        if(a): 
+            print("is equal to topicSub reproduce")
+            self.audioController.add_next_to_reproduce(audioRequests)
+        #If is equal to topicSub Stop
+        elif(MqttController.is_stop_topic(topicRecieved)): 
+            print("is equal to topicSub Stop")
+            self.audioController.add_next_to_stop(audioRequests)
+        else: print("Mame")
 
-def createMqttClient():
-    global client
-    print("Configuring Mqtt...")
-    client = mqtt.Client(client_id=clientId, clean_session=False, userdata=None, protocol=mqtt.MQTTv311, transport="tcp")
-    client.on_message=on_message #attach function to callback
-    client.username_pw_set(username=mqttUser, password=mqttPass)
-    client.connect(broker_address) #connect to broker
-    client.subscribe(topicSub)
-    client.subscribe(topicSubStop)
-    print("Mqtt client created.")
-    #client.loop_forever() #start the loop
-    client.loop_start()
+    def check_add_next_message(self):
+        next_to_reproduce = self.audioController.get_next_to_reproduce()
+        if(next_to_reproduce!=None):
+            print("[next_to_reproduce]")
+            self.reproduce_message(next_to_reproduce)
 
-def reproduceThreadLoop():
-    global queueFilesToReproduce
-    print("Executing reproduceThreadLoop")
-    while True:
-        if(len(queueFilesToReproduce)>0):
-            speakerId,message = queueFilesToReproduce.pop(0)
-            reproduceMessage(speakerId,message)
-        if(len(queueFilesToStop)>0):
-            stopMessage(queueFilesToStop.pop(0))
+        next_to_stop = self.audioController.get_next_to_stop()
+        if(next_to_stop!=None):
+            print("[next_to_stop]")
+            self.stop_message(next_to_stop)
+
+    def reproduce_message(self,audio_requests):
+        print("[reproduce_message]:")
+        speaker_id = audio_requests.rooms
+        audio_id = audio_requests.audioId
+
+        speakers=[]
+        if(speaker_id=="all"):
+            speakers = self.devicesList[:]
             
+        else:
+            speaker_found = SpeakerDevice.get_by_id(self.devicesList,speaker_id)
+            if(speaker_found==None): 
+                print(f"No speaker {speaker_id} found")
+                return # Close if not speaker founded
+            else:
+                speakers = [speaker_found]
+        
+        audioConfig = AudioConfig.get_by_id(self.audiosList,audio_id)
+        if(audioConfig==None): 
+            print(f"No filename {audio_id} found")
+            return # Close if not filename founded
+        print(f"Reproducing Audio: {audioConfig.file_name}")
+
+        for speaker_aux in speakers:
+            speaker_aux.add_audio(audio_id)
+            self.sendMessageToSpeaker(speaker_aux.id,"1")
+        
+        time.sleep(1.5)
+        self.executeAplay(audioConfig)
+        time.sleep(0.5)
+        #switchSpeakersStatus(speakerId,"0")
+
+    def stop_message(self,audio_requests):
+        audio_id = audio_requests.audioId
+        audioConfig = AudioConfig.get_by_id(self.audiosList,audio_id)
+        if(audioConfig==None): return # Close if not filename founded
+        self.killAplayProcess(audioConfig)
+
+    def sendMessageToSpeaker(self,speakerId,status):
+        try:
+            speakerAux = SpeakerDevice.get_by_id(self.devicesList,speakerId)
+            speakerPublishTopic = speakerAux.get_publish_topic()
+            message = speakerAux.get_parsed_message(status)
+            self.mqttController.send_message(speakerPublishTopic,message)
+        except:
+            print("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speakerId+"] status")
+
+    def executeAplay(self,audioConfig):
+        audio_id = audioConfig.id
+        try:
+            if(self.queueFilesPlaying.get(audio_id)!=None):
+                print("Audio already executing")
+                self.killAplayProcess(audioConfig)
+            sub_process_aux = subprocess.Popen(['aplay', self.soundsFolder+audioConfig.file_name])
+            self.queueFilesPlaying[audio_id]=sub_process_aux
+        except:
+            print("[Aplay Error]: An exception occurred using Aplay")
+
+    def killAplayProcess(self,audioConfig):
+        audio_id = audioConfig.id
+        print(f"Stopping Audio file: {audio_id}...")
+        try:
+            sub_process_aux = self.queueFilesPlaying[audio_id]
+            sub_process_aux.kill()
+            print(f"Stopped")
+        except:
+            print(f"Unable to kill audio file: {audio_id}")
+
+    def checkPlayingFiles(self):
+        for audio_id in list(self.queueFilesPlaying.keys()):
+            sub_process_aux = self.queueFilesPlaying[audio_id]
+            if sub_process_aux.poll() is not None:
+                self.remove_playing_file(audio_id)
+
+    def remove_playing_file(self,audio_id):
+        if audio_id in self.queueFilesPlaying:
+            del self.queueFilesPlaying[audio_id]
+            for speakerDevice in self.devicesList:
+                is_empty = speakerDevice.remove_audio(audio_id)
+                if(is_empty):
+                    self.sendMessageToSpeaker(speakerDevice.id,"0")
+
+
+    @classmethod
+    def validate_config_values(cls,config_data):
+        if ('mqtt' not in config_data):
+            raise ValueError('MQTT configuration data not found in configuration file')
+        if ('devices' not in config_data):
+            raise ValueError('Device configuration data not found in configuration file')
+
 def main():
     print("Starting Speaker Manager...")
-    createMqttClient()
-    reproduceThreadLoop()
+    speakerManager = SpeakerManager()
+    print("Executing reproduceThreadLoop")
+    while True:
+        speakerManager.check_add_next_message()
+        speakerManager.checkPlayingFiles()
 
 main()
