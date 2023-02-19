@@ -161,7 +161,6 @@ class SpeakerManager():
 
     def checkPlayingFiles(self):
         if(len(list(self.queueFilesPlaying.keys()))>0):
-            print("Entro a revisar los playing audios")
             for audio_id in list(self.queueFilesPlaying.keys()):
                 sub_process_aux = self.queueFilesPlaying[audio_id]
                 if sub_process_aux.poll() is not None:
