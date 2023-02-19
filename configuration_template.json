@@ -1,0 +1,22 @@
+{
+    "telegram":{
+        "botToken": "000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "enableChats":[
+            {
+                "chatId":111111111,
+                "user":"Andrés",
+                "nickname":"Señor"
+            }
+        ]
+    },
+    "apiService":{
+        "host": "http://localhost",
+        "port": "8080",
+        "secretToken": "0"
+    },
+    "mqtt":{
+        "broker_address": "localhost",
+        "mqtt_user": "user",
+        "mqtt_pass": "password"
+    }
+}
