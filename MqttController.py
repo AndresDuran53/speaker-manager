@@ -4,6 +4,7 @@ import paho.mqtt.publish as mqttpublish
 class MqttController:
     topicSubReproduce = "speaker-message/+/reproduce"
     topicSubStop = "speaker-message/+/stop"
+    topicRaspotify = "raspotify/event"
 
     def __init__(self,mqtt_config,on_message):
         print("Configuring Mqtt...")
@@ -13,6 +14,7 @@ class MqttController:
         self.client.connect(mqtt_config.broker_address) #connect to broker
         self.client.subscribe(self.topicSubReproduce)
         self.client.subscribe(self.topicSubStop)
+        self.client.subscribe(self.topicRaspotify)
         print("Mqtt client created.")
         #client.loop_forever() #start the loop
         self.client.loop_start()
@@ -22,12 +24,16 @@ class MqttController:
         self.client.publish(topic,message,qos=1,retain=False)
 
     @classmethod
+    def is_raspotify_topic(cls,topicRecieved):
+        return (topicRecieved == cls.topicRaspotify)
+    
+    @classmethod
     def is_reproduce_topic(cls,topicRecieved):
         return (topicRecieved.split("/")[-1] == cls.topicSubReproduce.split("/")[-1])
 
     @classmethod
     def is_stop_topic(cls,topicRecieved):
-        return topicRecieved.split("/")[-1] == cls.topicSubStop.split("/")[-1]
+        return (topicRecieved.split("/")[-1] == cls.topicSubStop.split("/")[-1])
     
 class MqttConfig:
     broker_address = None

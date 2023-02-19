@@ -8,6 +8,7 @@ from MqttController import MqttController, MqttConfig
 class SpeakerManager():
     mqttController = None
     audioController = None
+    raspotifyStatus = True
     audiosList = []
     devicesList = []
     queueFilesPlaying = {}
@@ -50,15 +51,27 @@ class SpeakerManager():
     def on_message(self,client, userdata, message):
         topicRecieved = message.topic
         messageRecieved = str(message.payload.decode("utf-8"))
-        speakerId = topicRecieved.split("/")[-2]
         print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
-        audioRequests = AudioRequests(messageRecieved,speakerId)
+
+        if(MqttController.is_raspotify_topic(topicRecieved)):
+            self.update_raspotify_status(messageRecieved)
         #If is equal to topicSub reproduce
-        if(MqttController.is_reproduce_topic(topicRecieved)): 
+        elif(MqttController.is_reproduce_topic(topicRecieved)):
+            speakerId = topicRecieved.split("/")[-2]
+            audioRequests = AudioRequests(messageRecieved,speakerId)
             self.audioController.add_next_to_reproduce(audioRequests)
         #If is equal to topicSub Stop
         elif(MqttController.is_stop_topic(topicRecieved)): 
+            speakerId = topicRecieved.split("/")[-2]
+            audioRequests = AudioRequests(messageRecieved,speakerId)
             self.audioController.add_next_to_stop(audioRequests)
+
+    def update_raspotify_status(self,messageRecieved):
+        if(messageRecieved=="stopped"):
+            self.raspotifyStatus = False
+        else:
+            self.raspotifyStatus = True
+        print("New Raspotify Status:",self.raspotifyStatus)
 
     def check_add_next_message(self):
         next_to_reproduce = self.audioController.get_next_to_reproduce()
@@ -147,7 +160,7 @@ class SpeakerManager():
             del self.queueFilesPlaying[audio_id]
             for speakerDevice in self.devicesList:
                 is_empty = speakerDevice.remove_audio(audio_id)
-                if(is_empty):
+                if(is_empty and (not self.raspotifyStatus)):
                     self.sendMessageToSpeaker(speakerDevice.id,"0")
 
 
