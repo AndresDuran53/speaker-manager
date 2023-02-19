@@ -4,11 +4,13 @@ from ConfigurationReader import ConfigurationReader
 from SpeakerDevice import SpeakerDevice
 from AudioController import AudioController, AudioRequests, AudioConfig
 from MqttController import MqttController, MqttConfig
+from SpotifyController import SpotifyController, SpotifyConfig
 
 class SpeakerManager():
     mqttController = None
     audioController = None
     raspotifyStatus = True
+    spotifyController = None
     audiosList = []
     devicesList = []
     queueFilesPlaying = {}
@@ -30,6 +32,9 @@ class SpeakerManager():
         #Setting Mqtt config
         mqtt_config = MqttConfig.from_json(config_data)
         self.mqttController = MqttController(mqtt_config,self.on_message)
+        #Set Spotify config
+        config = SpotifyConfig.from_json(config_data)
+        self.spotifyController = SpotifyController(config)
 
     def get_audios_config(self,config_data):
         audios = []
@@ -107,7 +112,10 @@ class SpeakerManager():
         for speaker_aux in speakers:
             speaker_aux.add_audio(audio_id)
             self.sendMessageToSpeaker(speaker_aux.id,"1")
-        
+
+        #Pause the Raspotify
+        self.spotifyController.pause_song()
+
         time.sleep(1.5)
         self.executeAplay(audioConfig)
         time.sleep(0.5)
@@ -150,10 +158,18 @@ class SpeakerManager():
             print(f"Unable to kill audio file: {audio_id}")
 
     def checkPlayingFiles(self):
-        for audio_id in list(self.queueFilesPlaying.keys()):
-            sub_process_aux = self.queueFilesPlaying[audio_id]
-            if sub_process_aux.poll() is not None:
-                self.remove_playing_file(audio_id)
+        if(len(list(self.queueFilesPlaying.keys()))>0):
+            print("Entro a revisar los playing audios")
+            for audio_id in list(self.queueFilesPlaying.keys()):
+                sub_process_aux = self.queueFilesPlaying[audio_id]
+                if sub_process_aux.poll() is not None:
+                    self.remove_playing_file(audio_id)
+            if(len(list(self.queueFilesPlaying.keys()))==0 and self.raspotifyStatus):
+                print("Ya no hay playing audios")
+                self.spotifyController.play_song()
+            else:
+                print("Si aun hay playing audios")
+
 
     def remove_playing_file(self,audio_id):
         if audio_id in self.queueFilesPlaying:
