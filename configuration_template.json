@@ -1,22 +1,47 @@
 {
-    "telegram":{
-        "botToken": "000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-        "enableChats":[
-            {
-                "chatId":111111111,
-                "user":"Andrés",
-                "nickname":"Señor"
-            }
-        ]
-    },
-    "apiService":{
-        "host": "http://localhost",
-        "port": "8080",
-        "secretToken": "0"
-    },
     "mqtt":{
         "broker_address": "localhost",
         "mqtt_user": "user",
         "mqtt_pass": "password"
+    },
+    "devices": [
+        {
+            "id": "012345",
+            "type": "CUSTOM",
+            "status": {
+                "0": "0",
+                "1": "1"
+            },
+            "template": "{\"CID\":\"1\",\"spst\":\"%_v%\"}",
+            "publishTopic": "speaker-switch/nag241/cmd",
+            "subscribeTopic": "speaker-switch/nag241/cmd"
+        },
+        {
+            "id": "0123456",
+            "type": "TASMOTA",
+            "status": {
+                "0": "OFF",
+                "1": "ON"
+            },
+            "template": "%_v%",
+            "publishTopic": "speakers/cmnd/0123456/POWER",
+            "subscribeTopic": "speakers/stat/0123456/POWER"
+        }
+    ],
+    "audios":[
+        {
+           "id":"welcome",
+           "file_name":"welcome.wav"
+        },
+        {
+           "id":"bye",
+           "file_name":"bye.wav"
+        }
+    ],
+    "spotify":{
+        "clientId":"00000000000000000000000000000000",
+        "clientSecret":"00000000000000000000000000000000",
+        "redirectUrl":"http://localhost:8000",
+        "raspotifyId":"0000000000000000000000000000000000000000"
     }
 }
