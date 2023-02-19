@@ -7,6 +7,7 @@ class SpotifyController:
 
     def __init__(self, config):
         self.config = config
+        self.wasPaused = False
 
     def pause_song(self):
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
@@ -14,8 +15,10 @@ class SpotifyController:
                                                        redirect_uri=self.config.redirect_url,
                                                        scope=self.config.scope))
         raspotifyId = self.get_raspotify_id()
-        if(raspotifyId != None):
+        isPlaying = sp.current_user_playing_track()[u'is_playing']
+        if(isPlaying and raspotifyId != None):
             sp.pause_playback(raspotifyId)
+            self.wasPaused = True
 
     def play_song(self):
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
@@ -23,6 +26,7 @@ class SpotifyController:
                                                        redirect_uri=self.config.redirect_url,
                                                        scope=self.config.scope))
         sp.start_playback()
+        self.wasPaused = False
 
     def get_devices(self):
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,

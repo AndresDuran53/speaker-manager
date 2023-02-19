@@ -72,6 +72,8 @@ class SpeakerManager():
             self.audioController.add_next_to_stop(audioRequests)
 
     def update_raspotify_status(self,messageRecieved):
+        if(messageRecieved == "volume_set" or messageRecieved == "sink"): return #Do not change anything
+
         if(messageRecieved=="stopped"):
             self.raspotifyStatus = False
         else:
@@ -165,10 +167,7 @@ class SpeakerManager():
                 if sub_process_aux.poll() is not None:
                     self.remove_playing_file(audio_id)
             if(len(list(self.queueFilesPlaying.keys()))==0 and self.raspotifyStatus):
-                print("Ya no hay playing audios")
                 self.spotifyController.play_song()
-            else:
-                print("Si aun hay playing audios")
 
 
     def remove_playing_file(self,audio_id):
