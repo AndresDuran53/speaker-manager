@@ -48,41 +48,28 @@ class SpeakerManager():
         return devices
     
     def on_message(self,client, userdata, message):
-        print("self:",self)
-        print("message:",message)
-        print("topicSubReproduce:",MqttController.topicSubReproduce)
         topicRecieved = message.topic
-        print("topicRecieved:",topicRecieved)
         messageRecieved = str(message.payload.decode("utf-8"))
         speakerId = topicRecieved.split("/")[-2]
         print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
         audioRequests = AudioRequests(messageRecieved,speakerId)
         #If is equal to topicSub reproduce
-        a = MqttController.is_reproduce_topic(topicRecieved)
-        print("topicRecieved2:",topicRecieved)
-        print("a:",a)
-        if(a): 
-            print("is equal to topicSub reproduce")
+        if(MqttController.is_reproduce_topic(topicRecieved)): 
             self.audioController.add_next_to_reproduce(audioRequests)
         #If is equal to topicSub Stop
         elif(MqttController.is_stop_topic(topicRecieved)): 
-            print("is equal to topicSub Stop")
             self.audioController.add_next_to_stop(audioRequests)
-        else: print("Mame")
 
     def check_add_next_message(self):
         next_to_reproduce = self.audioController.get_next_to_reproduce()
         if(next_to_reproduce!=None):
-            print("[next_to_reproduce]")
             self.reproduce_message(next_to_reproduce)
 
         next_to_stop = self.audioController.get_next_to_stop()
         if(next_to_stop!=None):
-            print("[next_to_stop]")
             self.stop_message(next_to_stop)
 
     def reproduce_message(self,audio_requests):
-        print("[reproduce_message]:")
         speaker_id = audio_requests.rooms
         audio_id = audio_requests.audioId
 
