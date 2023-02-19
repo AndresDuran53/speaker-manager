@@ -25,8 +25,9 @@ class SpotifyController:
                                                        client_secret=self.config.client_secret,
                                                        redirect_uri=self.config.redirect_url,
                                                        scope=self.config.scope))
-        sp.start_playback()
-        self.wasPaused = False
+        if(self.wasPaused):
+            sp.start_playback()
+            self.wasPaused = False
 
     def get_devices(self):
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
