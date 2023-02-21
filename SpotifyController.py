@@ -15,10 +15,12 @@ class SpotifyController:
                                                        redirect_uri=self.config.redirect_url,
                                                        scope=self.config.scope))
         raspotifyId = self.get_raspotify_id()
-        isPlaying = sp.current_user_playing_track()[u'is_playing']
-        if(isPlaying and raspotifyId != None):
-            sp.pause_playback(raspotifyId)
-            self.wasPaused = True
+        playing_track = sp.current_user_playing_track()
+        if(playing_track!=None):
+            isPlaying = sp.current_user_playing_track()[u'is_playing']
+            if(isPlaying and raspotifyId != None):
+                sp.pause_playback(raspotifyId)
+                self.wasPaused = True
 
     def play_song(self):
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
