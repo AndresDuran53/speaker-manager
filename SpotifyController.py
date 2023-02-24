@@ -9,39 +9,55 @@ class SpotifyController:
         self.config = config
         self.wasPaused = False
 
-    def pause_song(self):
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
-                                                       client_secret=self.config.client_secret,
-                                                       redirect_uri=self.config.redirect_url,
-                                                       scope=self.config.scope))
-        raspotifyId = self.get_raspotify_id()
-        playing_track = sp.current_user_playing_track()
-        if(playing_track!=None):
-            isPlaying = sp.current_user_playing_track()[u'is_playing']
+    def get_spotify_object(self):
+        try:
+            sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
+                                                        client_secret=self.config.client_secret,
+                                                        redirect_uri=self.config.redirect_url,
+                                                        scope=self.config.scope))
+        except:
+            print("[Error] Not able to authorize profile")   
+        return sp
+
+    def pause_song_if_necessary(self):
+        try:
+            sp = self.get_spotify_object()
+            raspotifyId = self.get_raspotify_id()
+            isPlaying = self.is_playing(sp)
             if(isPlaying and raspotifyId != None):
                 sp.pause_playback(raspotifyId)
                 self.wasPaused = True
+        except:
+            print("[Error] Not able to pause song")   
 
     def play_song(self):
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
-                                                       client_secret=self.config.client_secret,
-                                                       redirect_uri=self.config.redirect_url,
-                                                       scope=self.config.scope))
-        if(self.wasPaused):
-            sp.start_playback()
-            self.wasPaused = False
+        try:
+            sp = self.get_spotify_object()
+            if(self.wasPaused):
+                sp.start_playback()
+                self.wasPaused = False
+        except:
+            print("[Error] Not able to authorize profile")   
 
-    def get_devices(self):
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
-                                                       client_secret=self.config.client_secret,
-                                                       redirect_uri=self.config.redirect_url,
-                                                       scope=self.config.scope))
+    def is_playing(self,sp=None):
+        try:
+            if(sp == None): sp = self.get_spotify_object()
+            playing_track = sp.current_user_playing_track()
+            if(playing_track!=None):
+                isPlaying = playing_track[u'is_playing']
+                return isPlaying
+        except:
+            print("[Error] Not able to get song status")    
+        return False
+
+    def get_devices(self,sp=None):
+        if(sp == None): sp = self.get_spotify_object()
         devices_list = sp.devices()
         spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
         return spotifyDevice_list
     
-    def get_raspotify_id(self):
-        spotifyDevice_list = self.get_devices()
+    def get_raspotify_id(self,sp=None):
+        spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
             if(spotifyDevice.name == 'raspotify (homeassistant)'):
                 return spotifyDevice.id

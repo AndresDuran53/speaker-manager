@@ -9,7 +9,7 @@ from SpotifyController import SpotifyController, SpotifyConfig
 class SpeakerManager():
     mqttController = None
     audioController = None
-    raspotifyStatus = True
+    raspotifyStatus = False
     spotifyController = None
     audiosList = []
     devicesList = []
@@ -71,14 +71,15 @@ class SpeakerManager():
             audioRequests = AudioRequests(messageRecieved,speakerId)
             self.audioController.add_next_to_stop(audioRequests)
 
-    def update_raspotify_status(self,messageRecieved):
-        if(messageRecieved == "volume_set" or messageRecieved == "sink"): return #Do not change anything
-
+    def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):
             self.raspotifyStatus = False
-        else:
+            print("New Raspotify Status:",self.raspotifyStatus)
+        elif(messageRecieved == "playing" or messageRecieved == "paused" or messageRecieved == "changed"):
             self.raspotifyStatus = True
-        print("New Raspotify Status:",self.raspotifyStatus)
+            print("New Raspotify Status:",self.raspotifyStatus)
+        else:
+            return #Do not change anything
 
     def check_add_next_message(self):
         next_to_reproduce = self.audioController.get_next_to_reproduce()
@@ -116,7 +117,7 @@ class SpeakerManager():
             self.sendMessageToSpeaker(speaker_aux.id,"1")
 
         #Pause the Raspotify
-        self.spotifyController.pause_song()
+        self.spotifyController.pause_song_if_necessary()
 
         time.sleep(1.5)
         self.executeAplay(audioConfig)
