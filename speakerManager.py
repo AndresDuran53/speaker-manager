@@ -78,7 +78,6 @@ class SpeakerManager():
         elif(MqttController.is_tts_topic(topicRecieved)):
             speakerId = topicRecieved.split("/")[-2]
             audio_output_filename = "sounds/output.wav"
-            #text_to_send = "Welcome home! It's great to see you again. I hope you had a wonderful day. Since you left at around 5pm, there have been a couple of visitors who rang the doorbell, and one car parked in front of the house. Just thought you'd like to know.  Also, there are a couple of upcoming events you might want to remember - you have a psychologist appointment tomorrow at 5pm and a work meeting at 11am. Have a relaxing evening, and let me know if there's anything else I can assist you with!"
             text_to_send = messageRecieved
             self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename)
             audioRequests = AudioRequests("tts",speakerId)

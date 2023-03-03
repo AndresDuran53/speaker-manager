@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 class MqttController:
     topicSubReproduce = "speaker-message/+/reproduce"
     topicSubStop = "speaker-message/+/stop"
-    topicSubTts = "speaker-message/+/tts"
+    topicSubTts = "speaker-message/+/ttss"
     topicRaspotify = "raspotify/event"
 
     def __init__(self,mqtt_config,on_message,client_id="SpeakerManager"):
@@ -42,11 +42,8 @@ class MqttController:
     
     @classmethod
     def is_tts_topic(cls,topicRecieved):
-        print("Checking if is_tts_topic:",topicRecieved)
         isSpeakerMessage = (topicRecieved.split("/")[0] == cls.topicSubReproduce.split("/")[0])
-        print("CisSpeakerMessage:",isSpeakerMessage)
         isTts = (topicRecieved.split("/")[-1] == cls.topicSubTts.split("/")[-1])
-        print("isTts:",isTts)
         return (isSpeakerMessage and isTts)
     
 class MqttConfig:
