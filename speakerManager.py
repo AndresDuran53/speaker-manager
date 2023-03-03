@@ -5,6 +5,7 @@ from SpeakerDevice import SpeakerDevice
 from AudioController import AudioController, AudioRequests, AudioConfig
 from MqttController import MqttController, MqttConfig
 from SpotifyController import SpotifyController, SpotifyConfig
+from tts_generator import TextToSpeechGenerator
 
 class SpeakerManager():
     mqttController = None
@@ -35,6 +36,9 @@ class SpeakerManager():
         #Set Spotify config
         config = SpotifyConfig.from_json(config_data)
         self.spotifyController = SpotifyController(config)
+        #Set TTS generator
+        api_config_file = "text-to-speech-api.json"
+        self.textToSpeechGenerator = TextToSpeechGenerator(api_config_file)
 
     def get_audios_config(self,config_data):
         audios = []
@@ -70,6 +74,16 @@ class SpeakerManager():
             speakerId = topicRecieved.split("/")[-2]
             audioRequests = AudioRequests(messageRecieved,speakerId)
             self.audioController.add_next_to_stop(audioRequests)
+        #If is equal to topicSub tts
+        elif(MqttController.is_tts_topic(topicRecieved)):
+            speakerId = topicRecieved.split("/")[-2]
+            audio_output_filename = "sounds/output.wav"
+            #text_to_send = "Welcome home! It's great to see you again. I hope you had a wonderful day. Since you left at around 5pm, there have been a couple of visitors who rang the doorbell, and one car parked in front of the house. Just thought you'd like to know.  Also, there are a couple of upcoming events you might want to remember - you have a psychologist appointment tomorrow at 5pm and a work meeting at 11am. Have a relaxing evening, and let me know if there's anything else I can assist you with!"
+            text_to_send = messageRecieved
+            self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename)
+            audioRequests = AudioRequests("tts",speakerId)
+            self.audioController.add_next_to_reproduce(audioRequests)
+            pass
 
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):

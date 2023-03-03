@@ -130,3 +130,6 @@ dmypy.json
 
 # Custom
 configuration.json
+text-to-speech-api.json
+output.wav
+tts.wav
