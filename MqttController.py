@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 class MqttController:
     topicSubReproduce = "speaker-message/+/reproduce"
     topicSubStop = "speaker-message/+/stop"
-    topicSubTts = "speaker-message/+/ttss"
+    topicSubTts = "speaker-message/+/tts"
     topicRaspotify = "raspotify/event"
 
     def __init__(self,mqtt_config,on_message,client_id="SpeakerManager"):
