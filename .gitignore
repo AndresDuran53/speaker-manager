@@ -133,3 +133,4 @@ configuration.json
 text-to-speech-api.json
 output.wav
 tts.wav
+charactersSended.txt
