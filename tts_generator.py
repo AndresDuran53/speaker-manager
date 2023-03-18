@@ -39,10 +39,10 @@ class TextToSpeechGenerator:
         character_count = len(text_to_send)
         self.storage_characters_used.increase_value_for_today_by(character_count)
 
-    def generate_audio_file(self,text_to_send,output_filename):
+    def generate_audio_file(self,text_to_send,output_filename,language="en"):
         if(not self.can_synthesize_audio(text_to_send)):
             print("Cannot synthesize audio. Character limit reached.")
             return
         print("Generating audio from text")
-        self.tts_handler.generate_audio(text_to_send, output_filename)
+        self.tts_handler.generate_audio(text_to_send, output_filename,language)
         self.update_amount_used_chars(text_to_send)

@@ -82,7 +82,15 @@ class SpeakerManager():
             self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename)
             audioRequests = AudioRequests("tts",speakerId)
             self.audioController.add_next_to_reproduce(audioRequests)
-            pass
+        elif(MqttController.is_tts_spanish_topic(topicRecieved)):
+            speakerId = topicRecieved.split("/")[-2]
+            audio_output_filename = "sounds/output.wav"
+            text_to_send = messageRecieved
+            self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename,"es")
+            audioRequests = AudioRequests("tts",speakerId)
+            self.audioController.add_next_to_reproduce(audioRequests)
+            
+
 
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):

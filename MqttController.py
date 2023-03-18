@@ -4,6 +4,7 @@ class MqttController:
     topicSubReproduce = "speaker-message/+/reproduce"
     topicSubStop = "speaker-message/+/stop"
     topicSubTts = "speaker-message/+/tts"
+    topicSubTtsEs = "speaker-message/+/tts-es"
     topicRaspotify = "raspotify/event"
 
     def __init__(self,mqtt_config,on_message,client_id="SpeakerManager"):
@@ -15,6 +16,7 @@ class MqttController:
         self.client.subscribe(self.topicSubReproduce)
         self.client.subscribe(self.topicSubStop)
         self.client.subscribe(self.topicSubTts)
+        self.client.subscribe(self.topicSubTtsEs)
         self.client.subscribe(self.topicRaspotify)
         print("Mqtt client created.")
         #client.loop_forever() #start the loop
@@ -44,6 +46,12 @@ class MqttController:
     def is_tts_topic(cls,topicRecieved):
         isSpeakerMessage = (topicRecieved.split("/")[0] == cls.topicSubReproduce.split("/")[0])
         isTts = (topicRecieved.split("/")[-1] == cls.topicSubTts.split("/")[-1])
+        return (isSpeakerMessage and isTts)
+    
+    @classmethod
+    def is_tts_spanish_topic(cls,topicRecieved):
+        isSpeakerMessage = (topicRecieved.split("/")[0] == cls.topicSubReproduce.split("/")[0])
+        isTts = (topicRecieved.split("/")[-1] == cls.topicSubTtsEs.split("/")[-1])
         return (isSpeakerMessage and isTts)
     
 class MqttConfig:
