@@ -2,6 +2,7 @@ import subprocess
 import time
 from devices.SpeakerDevice import SpeakerDevice
 from utils.ConfigurationReader import ConfigurationReader
+from utils.custom_logging import CustomLogging
 from services.mqtt_service import MqttService, MqttConfig
 from services.spotify_service import SpotifyService, SpotifyConfig
 from controllers.audio_controller import AudioController, AudioRequests, AudioConfig
@@ -16,13 +17,16 @@ class SpeakerManager():
     devicesList = []
     queueFilesPlaying = {}
     soundsFolder = "sounds/"
+    logginPath = "data/speakerManager.log"
 
     def __init__(self):
-        print("Creating Speaker Manager...")
+        self.logger = CustomLogging(self.logginPath)
+        self.logger.info("Creating Speaker Manager...")
         self.update_config_values()
+        self.logger.info("Speaker Manager Created")
 
     def update_config_values(self):
-        print("Updating configuration Values")
+        self.logger.info("Updating configuration Values")
         config_data = ConfigurationReader().read_config_file()
         SpeakerManager.validate_config_values(config_data)
         #Set Audios
@@ -54,13 +58,13 @@ class SpeakerManager():
                 device = SpeakerDevice.from_json(device_data)
                 devices.append(device)
             except TypeError:
-                print(f'Error: Invalid device configuration: {device_data}')
+                self.logger.error(f'Error: Invalid device configuration: {device_data}')
         return devices
     
     def on_message(self,client, userdata, message):
         topicRecieved = message.topic
         messageRecieved = str(message.payload.decode("utf-8"))
-        print("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
+        self.logger.debug("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
 
         if(MqttService.is_raspotify_topic(topicRecieved)):
             self.update_raspotify_status(messageRecieved)
@@ -93,10 +97,10 @@ class SpeakerManager():
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):
             self.raspotifyStatus = False
-            print("New Raspotify Status:",self.raspotifyStatus)
+            self.logger.info("New Raspotify Status:",self.raspotifyStatus)
         elif(messageRecieved == "playing" or messageRecieved == "paused" or messageRecieved == "changed"):
             self.raspotifyStatus = True
-            print("New Raspotify Status:",self.raspotifyStatus)
+            self.logger.info("New Raspotify Status:",self.raspotifyStatus)
         else:
             return #Do not change anything
 
@@ -120,16 +124,16 @@ class SpeakerManager():
         else:
             speaker_found = SpeakerDevice.get_by_id(self.devicesList,speaker_id)
             if(speaker_found==None): 
-                print(f"No speaker {speaker_id} found")
+                self.logger.warning(f"No speaker {speaker_id} found")
                 return # Close if not speaker founded
             else:
                 speakers = [speaker_found]
         
         audioConfig = AudioConfig.get_by_id(self.audiosList,audio_id)
         if(audioConfig==None): 
-            print(f"No filename {audio_id} found")
+            self.logger.warning(f"No filename {audio_id} found")
             return # Close if not filename founded
-        print(f"Reproducing Audio: {audioConfig.file_name}")
+        self.logger.info(f"Reproducing Audio: {audioConfig.file_name}")
 
         for speaker_aux in speakers:
             speaker_aux.add_audio(audio_id)
@@ -156,28 +160,28 @@ class SpeakerManager():
             message = speakerAux.get_parsed_message(status)
             self.mqttController.send_message(speakerPublishTopic,message)
         except:
-            print("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speakerId+"] status")
+            self.logger.error("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speakerId+"] status")
 
     def executeAplay(self,audioConfig):
         audio_id = audioConfig.id
         try:
             if(self.queueFilesPlaying.get(audio_id)!=None):
-                print("Audio already executing")
+                self.logger.info("Audio already executing")
                 self.killAplayProcess(audioConfig)
             sub_process_aux = subprocess.Popen(['aplay', self.soundsFolder+audioConfig.file_name])
             self.queueFilesPlaying[audio_id]=sub_process_aux
         except:
-            print("[Aplay Error]: An exception occurred using Aplay")
+            self.logger.error("[Aplay Error]: An exception occurred using Aplay")
 
     def killAplayProcess(self,audioConfig):
         audio_id = audioConfig.id
-        print(f"Stopping Audio file: {audio_id}...")
+        self.logger.info(f"Stopping Audio file: {audio_id}...")
         try:
             sub_process_aux = self.queueFilesPlaying[audio_id]
             sub_process_aux.kill()
-            print(f"Stopped")
+            self.logger.info(f"Stopped")
         except:
-            print(f"Unable to kill audio file: {audio_id}")
+            self.logger.error(f"Unable to kill audio file: {audio_id}")
 
     def checkPlayingFiles(self):
         if(len(list(self.queueFilesPlaying.keys()))>0):
@@ -197,6 +201,11 @@ class SpeakerManager():
                 if(is_empty and (not self.raspotifyStatus)):
                     self.sendMessageToSpeaker(speakerDevice.id,"0")
 
+    def runLoop(self):
+        self.logger.info("Executing reproduceThreadLoop")
+        while True:
+            self.check_add_next_message()
+            self.checkPlayingFiles()
 
     @classmethod
     def validate_config_values(cls,config_data):
@@ -206,11 +215,7 @@ class SpeakerManager():
             raise ValueError('Device configuration data not found in configuration file')
 
 def main():
-    print("Starting Speaker Manager...")
     speakerManager = SpeakerManager()
-    print("Executing reproduceThreadLoop")
-    while True:
-        speakerManager.check_add_next_message()
-        speakerManager.checkPlayingFiles()
+    speakerManager.runLoop()
 
 main()
