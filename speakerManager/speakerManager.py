@@ -53,7 +53,7 @@ class SpeakerManager():
     
     def on_message(self,client, userdata, message):
         topicRecieved, messageRecieved = MqttService.extract_topic_and_payload(message)
-        self.logger.debug("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
+        self.logger.debug(f"[Topic]: {topicRecieved} [Message Recieved]: {messageRecieved}")
 
         if(MqttService.is_raspotify_topic(topicRecieved)):
             self.update_raspotify_status(messageRecieved)
@@ -73,10 +73,10 @@ class SpeakerManager():
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):
             self.raspotify_status = False
-            self.logger.info("New Raspotify Status:",self.raspotify_status)
+            self.logger.info(f"New Raspotify Status: {self.raspotify_status}")
         elif(messageRecieved == "playing" or messageRecieved == "paused" or messageRecieved == "changed"):
             self.raspotify_status = True
-            self.logger.info("New Raspotify Status:",self.raspotify_status)
+            self.logger.info(f"New Raspotify Status: {self.raspotify_status}")
         else:
             return #Do not change anything
 
@@ -134,7 +134,7 @@ class SpeakerManager():
             message = speakerAux.get_parsed_message(status)
             self.mqtt_service.send_message(speakerPublishTopic,message)
         except:
-            self.logger.error("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speaker_id+"] status")
+            self.logger.error(f"[Switch Speaker Error]: An exception occurred switching Speaker [id: {speaker_id}] status")
 
     def executeAplay(self,audio_config:AudioConfig):
         time.sleep(1.5)
