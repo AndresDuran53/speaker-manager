@@ -18,6 +18,8 @@ class SpeakerManager():
     queueFilesPlaying = {}
     soundsFolder = "sounds/"
     logginPath = "data/speakerManager.log"
+    api_config_file = "data/text-to-speech-api.json"
+    audio_output_filename = "sounds/output.wav"
 
     def __init__(self):
         self.logger = CustomLogging(self.logginPath)
@@ -31,9 +33,9 @@ class SpeakerManager():
         SpeakerManager.validate_config_values(config_data)
         #Set Audios
         self.audioController = AudioController()
-        self.audiosList = self.get_audios_config(config_data)
+        self.audiosList = AudioConfig.list_from_json(config_data)
         #Set Devices
-        self.devicesList = self.get_devices_config(config_data)
+        self.devicesList = SpeakerDevice.list_from_json(config_data)
         #Setting Mqtt config
         mqtt_config = MqttConfig.from_json(config_data)
         self.mqttController = MqttService(mqtt_config,self.on_message)
@@ -41,58 +43,30 @@ class SpeakerManager():
         config = SpotifyConfig.from_json(config_data)
         self.spotifyController = SpotifyService(config)
         #Set TTS generator
-        api_config_file = "data/text-to-speech-api.json"
-        self.textToSpeechGenerator = TextToSpeechGenerator(api_config_file)
+        self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
 
-    def get_audios_config(self,config_data):
-        audios = []
-        for audio_data in config_data['audios']:
-            audio_config = AudioConfig.from_json(audio_data)
-            audios.append(audio_config)
-        return audios
-        
-    def get_devices_config(self,config_data):
-        devices = []
-        for device_data in config_data['devices']:
-            try:
-                device = SpeakerDevice.from_json(device_data)
-                devices.append(device)
-            except TypeError:
-                self.logger.error(f'Error: Invalid device configuration: {device_data}')
-        return devices
+    def generate_tts_audio(self, messageRecieved, speakerId, language="en"):
+        self.textToSpeechGenerator.generate_audio_file(messageRecieved, self.audio_output_filename, language)
+        self.audioController.add_new_audio_request("tts",speakerId)
     
     def on_message(self,client, userdata, message):
-        topicRecieved = message.topic
-        messageRecieved = str(message.payload.decode("utf-8"))
+        topicRecieved, messageRecieved = MqttService.extract_topic_and_payload(message)
         self.logger.debug("[Topic]:",topicRecieved,"[Message Recieved]:",messageRecieved)
 
         if(MqttService.is_raspotify_topic(topicRecieved)):
             self.update_raspotify_status(messageRecieved)
-        #If is equal to topicSub reproduce
-        elif(MqttService.is_reproduce_topic(topicRecieved)):
-            speakerId = topicRecieved.split("/")[-2]
-            audioRequests = AudioRequests(messageRecieved,speakerId)
-            self.audioController.add_next_to_reproduce(audioRequests)
-        #If is equal to topicSub Stop
-        elif(MqttService.is_stop_topic(topicRecieved)): 
-            speakerId = topicRecieved.split("/")[-2]
-            audioRequests = AudioRequests(messageRecieved,speakerId)
-            self.audioController.add_next_to_stop(audioRequests)
-        #If is equal to topicSub tts
+            return
+        
+        speakerId = topicRecieved.split("/")[-2]
+
+        if(MqttService.is_reproduce_topic(topicRecieved)):
+            self.audioController.add_new_audio_request(messageRecieved, speakerId, stop=False)
+        elif(MqttService.is_stop_topic(topicRecieved)):
+            self.audioController.add_new_audio_request(messageRecieved, speakerId, stop=True)
         elif(MqttService.is_tts_topic(topicRecieved)):
-            speakerId = topicRecieved.split("/")[-2]
-            audio_output_filename = "sounds/output.wav"
-            text_to_send = messageRecieved
-            self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename)
-            audioRequests = AudioRequests("tts",speakerId)
-            self.audioController.add_next_to_reproduce(audioRequests)
+            self.generate_tts_audio(messageRecieved, speakerId, "en")
         elif(MqttService.is_tts_spanish_topic(topicRecieved)):
-            speakerId = topicRecieved.split("/")[-2]
-            audio_output_filename = "sounds/output.wav"
-            text_to_send = messageRecieved
-            self.textToSpeechGenerator.generate_audio_file(text_to_send, audio_output_filename,"es")
-            audioRequests = AudioRequests("tts",speakerId)
-            self.audioController.add_next_to_reproduce(audioRequests)
+            self.generate_tts_audio(messageRecieved, speakerId, "es")
 
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):
@@ -145,7 +119,6 @@ class SpeakerManager():
         time.sleep(1.5)
         self.executeAplay(audioConfig)
         time.sleep(0.5)
-        #switchSpeakersStatus(speakerId,"0")
 
     def stop_message(self,audio_requests):
         audio_id = audio_requests.audioId

@@ -26,6 +26,12 @@ class MqttService:
         print("Sending:",topic,message)
         self.client.publish(topic,message,qos=1,retain=False)
 
+    @staticmethod
+    def extract_topic_and_payload(message):
+        topic = message.topic
+        payload = message.payload.decode("utf-8")
+        return topic, payload
+
     @classmethod
     def is_raspotify_topic(cls,topicRecieved):
         return (topicRecieved == cls.topicRaspotify)
