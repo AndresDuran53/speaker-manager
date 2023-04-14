@@ -1,13 +1,13 @@
 import os
-from tts_services.google_tts_handler import GoogleTTSHandler
-from csv_storage import CSVStorage
+from services.google_tts_service import GoogleTTSService
+from utils.csv_storage import CSVStorage
 
 class TextToSpeechGenerator:
     tts_handler = None
     max_characters_per_requests = 1500
     max_characters_per_day = 30000
     max_characters_per_month = 900000
-    used_chars_filename = 'charactersSended.txt'
+    used_chars_filename = 'data/charactersSended.txt'
 
     def __init__(self,config_file):
         self.set_google_as_tts_handler(config_file)
@@ -17,7 +17,7 @@ class TextToSpeechGenerator:
         self.max_characters_per_requests = 1500
         self.max_characters_per_day = 30000
         self.max_characters_per_month = 900000
-        self.tts_handler = GoogleTTSHandler(config_file)
+        self.tts_handler = GoogleTTSService(config_file)
 
 
     def can_synthesize_audio(self, text_to_send):

@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 
-class MqttController:
+class MqttService:
     topicSubReproduce = "speaker-message/+/reproduce"
     topicSubStop = "speaker-message/+/stop"
     topicSubTts = "speaker-message/+/tts"

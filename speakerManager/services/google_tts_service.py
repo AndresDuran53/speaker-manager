@@ -1,6 +1,6 @@
 from google.cloud import texttospeech
 
-class GoogleTTSHandler:
+class GoogleTTSService:
     def __init__(self, key_path):
         self.client = texttospeech.TextToSpeechClient.from_service_account_file(key_path)
         self.voice_en = texttospeech.VoiceSelectionParams(language_code="en-US", name="en-US-Neural2-C")
