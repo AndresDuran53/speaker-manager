@@ -3,7 +3,7 @@ from google.cloud import texttospeech
 class GoogleTTSService:
     def __init__(self, key_path):
         self.client = texttospeech.TextToSpeechClient.from_service_account_file(key_path)
-        self.voice_en = texttospeech.VoiceSelectionParams(language_code="en-US", name="en-US-Neural2-C")
+        self.voice_en = texttospeech.VoiceSelectionParams(language_code="en-US", name="en-US-Neural2-F")
         self.voice_es = texttospeech.VoiceSelectionParams(language_code="es-US", name="es-US-Neural2-C")
         self.audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.LINEAR16)
     

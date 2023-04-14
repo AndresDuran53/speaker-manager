@@ -18,6 +18,12 @@ class AudioController:
     def add_next_to_stop(self,audioRequests):
         self.queueFilesToStop.append(audioRequests)
 
+    def add_new_audio_request(self, audioId, rooms, stop=False):
+        audio_requests = AudioRequests(audioId, rooms)
+        if(stop):
+            self.add_next_to_stop(audio_requests)    
+        else:
+            self.add_next_to_reproduce(audio_requests)
 
 class AudioRequests():
     def __init__(self,audioId,rooms):
@@ -36,6 +42,14 @@ class AudioConfig:
             file_name=audio_data['file_name']
         )
         return audio_config
+    
+    @classmethod
+    def list_from_json(cls,config_data):
+        audios = []
+        for audio_data in config_data['audios']:
+            audio_config = cls.from_json(audio_data)
+            audios.append(audio_config)
+        return audios
     
     @classmethod
     def get_by_id(cls, audio_configs, audio_id):

@@ -6,8 +6,10 @@ class SpotifyService:
     def __init__(self, config):
         self.config = config
         self.wasPaused = False
+        self.volume_decrease = 0.8
 
     def get_spotify_object(self):
+        sp = None
         try:
             sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
                                                         client_secret=self.config.client_secret,
@@ -20,10 +22,12 @@ class SpotifyService:
     def pause_song_if_necessary(self):
         try:
             sp = self.get_spotify_object()
-            raspotifyId = self.get_raspotify_id()
-            isPlaying = self.is_playing(sp)
-            if(isPlaying and raspotifyId != None):
-                sp.pause_playback(raspotifyId)
+            is_raspotify_device_playing = self.is_raspotify_playing(sp)
+            if(is_raspotify_device_playing):
+                raspotify_device = self.get_raspotify_device(sp)
+                actual_volume = raspotify_device.volume_percent
+                sp.volume(int(actual_volume*self.volume_decrease))
+                #sp.pause_playback(raspotify_id)
                 self.wasPaused = True
         except:
             print("[Error] Not able to pause song")   
@@ -32,14 +36,17 @@ class SpotifyService:
         try:
             sp = self.get_spotify_object()
             if(self.wasPaused):
-                sp.start_playback()
+                #sp.start_playback()
+                raspotify_device = self.get_raspotify_device(sp)
+                actual_volume = raspotify_device.volume_percent
+                sp.volume(int(actual_volume//self.volume_decrease))
                 self.wasPaused = False
         except:
             print("[Error] Not able to authorize profile")   
 
     def is_playing(self,sp=None):
         try:
-            if(sp == None): sp = self.get_spotify_object()
+            if(sp is None): sp = self.get_spotify_object()
             playing_track = sp.current_user_playing_track()
             if(playing_track!=None):
                 isPlaying = playing_track[u'is_playing']
@@ -49,17 +56,39 @@ class SpotifyService:
         return False
 
     def get_devices(self,sp=None):
-        if(sp == None): sp = self.get_spotify_object()
+        if(sp is None): sp = self.get_spotify_object()
         devices_list = sp.devices()
         spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
         return spotifyDevice_list
     
+    def get_raspotify_device(self,sp=None):
+        if(sp is None): sp = self.get_spotify_object()
+        spotifyDevice_list = self.get_devices(sp)
+        for spotifyDevice in spotifyDevice_list:
+            if(spotifyDevice.name == 'raspotify (homeassistant)'):
+                return spotifyDevice
+        return None
+    
     def get_raspotify_id(self,sp=None):
+        if(sp is None): sp = self.get_spotify_object()
         spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
             if(spotifyDevice.name == 'raspotify (homeassistant)'):
                 return spotifyDevice.id
         return None
+    
+    def is_raspotify_playing(self,sp=None):
+        if(sp is None): sp = self.get_spotify_object()
+        raspotify_device = self.get_raspotify_device(sp)
+        if(raspotify_device is not None and raspotify_device.is_active):
+            playing_track = sp.current_user_playing_track()
+            if(playing_track is not None):
+                isPlaying = playing_track[u'is_playing']
+                return isPlaying    
+        return False        
+
+    def test(self):
+        self.pause_song_if_necessary()
             
 
 class SpotifyDevice:

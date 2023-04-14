@@ -50,6 +50,14 @@ class SpeakerDevice:
             publish_topic=config_data.get('publishTopic', None),
             subscribe_topic=config_data.get('subscribeTopic', None)
         )
+    
+    @classmethod
+    def list_from_json(cls,config_data):
+        devices = []
+        for device_data in config_data['devices']:
+                device = cls.from_json(device_data)
+                devices.append(device)
+        return devices
 
     @classmethod
     def get_by_id(cls, device_list, id):
