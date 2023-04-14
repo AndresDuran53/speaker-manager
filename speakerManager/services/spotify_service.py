@@ -1,9 +1,7 @@
 import spotipy
-import json
 from spotipy.oauth2 import SpotifyOAuth
 
-
-class SpotifyController:
+class SpotifyService:
 
     def __init__(self, config):
         self.config = config
