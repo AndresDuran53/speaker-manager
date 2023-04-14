@@ -45,9 +45,9 @@ class SpeakerManager():
         #Set TTS generator
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
 
-    def generate_tts_audio(self, messageRecieved, speakerId, language="en"):
+    def generate_tts_audio(self, messageRecieved, speaker_id, language="en"):
         self.textToSpeechGenerator.generate_audio_file(messageRecieved, self.audio_output_filename, language)
-        self.audioController.add_new_audio_request("tts",speakerId)
+        self.audioController.add_new_audio_request("tts",speaker_id)
     
     def on_message(self,client, userdata, message):
         topicRecieved, messageRecieved = MqttService.extract_topic_and_payload(message)
@@ -57,16 +57,16 @@ class SpeakerManager():
             self.update_raspotify_status(messageRecieved)
             return
         
-        speakerId = topicRecieved.split("/")[-2]
+        speaker_id = topicRecieved.split("/")[-2]
 
         if(MqttService.is_reproduce_topic(topicRecieved)):
-            self.audioController.add_new_audio_request(messageRecieved, speakerId, stop=False)
+            self.audioController.add_new_audio_request(messageRecieved, speaker_id, stop=False)
         elif(MqttService.is_stop_topic(topicRecieved)):
-            self.audioController.add_new_audio_request(messageRecieved, speakerId, stop=True)
+            self.audioController.add_new_audio_request(messageRecieved, speaker_id, stop=True)
         elif(MqttService.is_tts_topic(topicRecieved)):
-            self.generate_tts_audio(messageRecieved, speakerId, "en")
+            self.generate_tts_audio(messageRecieved, speaker_id, "en")
         elif(MqttService.is_tts_spanish_topic(topicRecieved)):
-            self.generate_tts_audio(messageRecieved, speakerId, "es")
+            self.generate_tts_audio(messageRecieved, speaker_id, "es")
 
     def update_raspotify_status(self,messageRecieved):        
         if(messageRecieved=="stopped"):
@@ -82,67 +82,68 @@ class SpeakerManager():
         next_to_reproduce = self.audioController.get_next_to_reproduce()
         if(next_to_reproduce!=None):
             self.reproduce_message(next_to_reproduce)
-
         next_to_stop = self.audioController.get_next_to_stop()
         if(next_to_stop!=None):
             self.stop_message(next_to_stop)
 
-    def reproduce_message(self,audio_requests):
+    def find_speakers(self, speaker_id) -> list[SpeakerDevice]:
+        if speaker_id == "all": return self.devicesList[:]
+        speaker_found = SpeakerDevice.get_by_id(self.devicesList, speaker_id)
+        if (speaker_found is None):
+            self.logger.warning(f"No speaker {speaker_id} found")
+            return []
+        return [speaker_found]
+    
+    def find_audio_config(self, audio_id) -> AudioConfig:
+        audio_config = AudioConfig.get_by_id(self.audiosList, audio_id)
+        if (audio_config is None):
+            self.logger.warning(f"No audio filename found for {audio_id}")
+            return None
+        return audio_config
+
+    def reproduce_message(self, audio_requests:AudioRequests):
         speaker_id = audio_requests.rooms
         audio_id = audio_requests.audioId
-
-        speakers=[]
-        if(speaker_id=="all"):
-            speakers = self.devicesList[:]
-            
-        else:
-            speaker_found = SpeakerDevice.get_by_id(self.devicesList,speaker_id)
-            if(speaker_found==None): 
-                self.logger.warning(f"No speaker {speaker_id} found")
-                return # Close if not speaker founded
-            else:
-                speakers = [speaker_found]
         
-        audioConfig = AudioConfig.get_by_id(self.audiosList,audio_id)
-        if(audioConfig==None): 
-            self.logger.warning(f"No filename {audio_id} found")
-            return # Close if not filename founded
-        self.logger.info(f"Reproducing Audio: {audioConfig.file_name}")
+        speakers=self.find_speakers(speaker_id)
+        if(len(speakers)==0): return
+        
+        audio_config = self.find_audio_config(audio_id)
+        if(audio_config is None): return
 
+        self.logger.info(f"Reproducing Audio: {audio_config.file_name}")
         for speaker_aux in speakers:
             speaker_aux.add_audio(audio_id)
             self.sendMessageToSpeaker(speaker_aux.id,"1")
-
-        #Pause the Raspotify
         self.spotifyController.pause_song_if_necessary()
+        self.executeAplay(audio_config)
+        
 
-        time.sleep(1.5)
-        self.executeAplay(audioConfig)
-        time.sleep(0.5)
-
-    def stop_message(self,audio_requests):
+    def stop_message(self,audio_requests:AudioRequests):
         audio_id = audio_requests.audioId
         audioConfig = AudioConfig.get_by_id(self.audiosList,audio_id)
         if(audioConfig==None): return # Close if not filename founded
         self.killAplayProcess(audioConfig)
 
-    def sendMessageToSpeaker(self,speakerId,status):
+    def sendMessageToSpeaker(self,speaker_id,status):
         try:
-            speakerAux = SpeakerDevice.get_by_id(self.devicesList,speakerId)
+            speakerAux = SpeakerDevice.get_by_id(self.devicesList,speaker_id)
             speakerPublishTopic = speakerAux.get_publish_topic()
             message = speakerAux.get_parsed_message(status)
             self.mqttController.send_message(speakerPublishTopic,message)
         except:
-            self.logger.error("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speakerId+"] status")
+            self.logger.error("[Switch Speaker Error]: An exception occurred switching Speaker [id: "+speaker_id+"] status")
 
-    def executeAplay(self,audioConfig):
-        audio_id = audioConfig.id
+    def executeAplay(self,audio_config:AudioConfig):
+        time.sleep(1.5)
+        audio_id = audio_config.id
         try:
             if(self.queueFilesPlaying.get(audio_id)!=None):
                 self.logger.info("Audio already executing")
-                self.killAplayProcess(audioConfig)
-            sub_process_aux = subprocess.Popen(['aplay', self.soundsFolder+audioConfig.file_name])
+                self.killAplayProcess(audio_config)
+            sub_process_aux = subprocess.Popen(['aplay', self.soundsFolder+audio_config.file_name])
             self.queueFilesPlaying[audio_id]=sub_process_aux
+            time.sleep(0.5)
         except:
             self.logger.error("[Aplay Error]: An exception occurred using Aplay")
 
