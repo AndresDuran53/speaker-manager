@@ -42,7 +42,8 @@ class TextToSpeechGenerator:
     def generate_audio_file(self,text_to_send,output_filename,language="en"):
         if(not self.can_synthesize_audio(text_to_send)):
             print("Cannot synthesize audio. Character limit reached.")
-            return
+            return False
         print("Generating audio from text")
         self.tts_handler.generate_audio(text_to_send, output_filename,language)
         self.update_amount_used_chars(text_to_send)
+        return True
