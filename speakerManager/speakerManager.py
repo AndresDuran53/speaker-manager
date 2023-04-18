@@ -48,8 +48,9 @@ class SpeakerManager():
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
 
     def generate_tts_audio(self, messageRecieved, speaker_id, language="en"):
-        self.textToSpeechGenerator.generate_audio_file(messageRecieved, self.audio_output_filename, language)
-        self.audio_controller.add_new_audio_request("tts",speaker_id)
+        file_generated = self.textToSpeechGenerator.generate_audio_file(messageRecieved, self.audio_output_filename, language)
+        if(file_generated):
+            self.audio_controller.add_new_audio_request("tts",speaker_id)
     
     def on_message(self,client, userdata, message):
         topicRecieved, messageRecieved = MqttService.extract_topic_and_payload(message)
