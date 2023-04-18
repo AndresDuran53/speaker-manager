@@ -24,7 +24,7 @@ class GoogleTTSService:
             voice_to_use = self.voice_es
         synthesis_input = texttospeech.SynthesisInput(text=text_to_send)
         request = texttospeech.SynthesizeSpeechRequest(input=synthesis_input, voice=voice_to_use, audio_config=self.audio_config)
-        print("Sending text to google")
+        print(f"Sending text to google: {text_to_send}")
         response = self.client.synthesize_speech(request=request)
 
         with open(filename, 'wb') as out:
