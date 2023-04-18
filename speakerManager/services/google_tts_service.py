@@ -13,7 +13,7 @@ class GoogleTTSService:
         speech_lines = SpeechSplitter.divide_text_by_newline(text_to_send)
         audio_files_name = []
         for i, speech_line in enumerate(speech_lines):
-            file_name = f"output_temp_{i}.wav"
+            file_name = f"sounds/output_temp_{i}.wav"
             self._generate_audio_from_speech(speech_line,file_name,language)
             audio_files_name.append(file_name)
         AudioMerger.merge_audio_files(audio_files_name,filename)
@@ -33,12 +33,13 @@ class GoogleTTSService:
 class SpeechSplitter():
 
     @staticmethod
-    def divide_text_by_newline(text, max_bytes=600):
+    def divide_text_by_newline(text, max_bytes=500):
         lines = text.split('\n')
         groups = []
         current_group = ''
         for line in lines:
-            if len(line.encode()) <= max_bytes:
+            line_len = SpeechSplitter._get_bytes_on_string(line)
+            if (line_len <= max_bytes):
                 current_group = SpeechSplitter._add_to_group(current_group, line, groups, max_bytes)
             else:
                 current_group = SpeechSplitter._split_long_line(line, current_group, groups, max_bytes)
@@ -47,7 +48,9 @@ class SpeechSplitter():
 
     @staticmethod
     def _add_to_group(current_group, line, groups, max_bytes):
-        if len(current_group.encode() + line.encode()) > max_bytes:
+        current_group_len = SpeechSplitter._get_bytes_on_string(current_group)
+        line_len = SpeechSplitter._get_bytes_on_string(line)
+        if (current_group_len + line_len) > max_bytes:
             SpeechSplitter._add_current_group(groups, current_group)
             current_group = line
         else:
@@ -70,6 +73,10 @@ class SpeechSplitter():
     def _add_current_group(groups, current_group):
         if current_group:
             groups.append(current_group)
+
+    @staticmethod
+    def _get_bytes_on_string(text):
+        return len(text.encode('utf-8'))
 
 class AudioMerger:
 
