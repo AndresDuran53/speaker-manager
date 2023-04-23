@@ -33,7 +33,7 @@ class GoogleTTSService:
 class SpeechSplitter():
 
     @staticmethod
-    def divide_text_by_newline(text, max_bytes=500):
+    def divide_text_by_newline(text, max_bytes=400):
         lines = text.split('\n')
         groups = []
         current_group = ''
