@@ -44,6 +44,10 @@ class TextToSpeechGenerator:
             print("Cannot synthesize audio. Character limit reached.")
             return False
         print("Generating audio from text")
-        self.tts_handler.generate_audio(text_to_send, output_filename,language)
-        self.update_amount_used_chars(text_to_send)
-        return True
+        try:
+            self.tts_handler.generate_audio(text_to_send, output_filename,language)
+            self.update_amount_used_chars(text_to_send)
+            return True
+        except:
+            print("Cannot synthesize audio. Google Error.")
+            return False
