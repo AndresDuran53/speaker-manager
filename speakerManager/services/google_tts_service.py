@@ -33,7 +33,7 @@ class GoogleTTSService:
 class SpeechSplitter():
 
     @staticmethod
-    def divide_text_by_newline(text, max_bytes=400):
+    def divide_text_by_newline(text, max_bytes=500):
         lines = text.split('\n')
         groups = []
         current_group = ''
@@ -54,7 +54,7 @@ class SpeechSplitter():
             SpeechSplitter._add_current_group(groups, current_group)
             current_group = line
         else:
-            current_group += line
+            current_group += f" {line}"
         return current_group
 
     @staticmethod
