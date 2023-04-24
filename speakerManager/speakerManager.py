@@ -183,6 +183,7 @@ class SpeakerManager():
         while True:
             self.check_add_next_message()
             self.checkPlayingFiles()
+            time.sleep(0.5)
 
     @classmethod
     def validate_config_values(cls,config_data):
