@@ -1,3 +1,4 @@
 paho-mqtt
 spotipy
 google-cloud-texttospeech
+PyChromecast
