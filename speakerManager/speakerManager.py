@@ -1,6 +1,7 @@
 import subprocess
 import time
 from devices.SpeakerDevice import SpeakerDevice
+from devices.chromecast_device import ChromecastAudioDevice
 from utils.ConfigurationReader import ConfigurationReader
 from utils.custom_logging import CustomLogging
 from services.mqtt_service import MqttService, MqttConfig
@@ -15,11 +16,12 @@ class SpeakerManager():
     raspotify_status: bool
     audios_list: list
     devices_list: list
+    chromecast_list: list
     queue_files_playing: dict
     sounds_folder = "sounds/"
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
-    audio_output_filename = "sounds/output.wav"
+    audio_output_filename = "output.wav"
 
     def __init__(self):
         self.raspotify_status = False
@@ -38,6 +40,8 @@ class SpeakerManager():
         self.audios_list = AudioConfig.list_from_json(config_data)
         #Set Devices
         self.devices_list = SpeakerDevice.list_from_json(config_data)
+        #Set Chromecast Devices
+        self.chromecast_list = ChromecastAudioDevice.list_from_json(config_data)
         #Setting Mqtt config
         mqtt_config = MqttConfig.from_json(config_data)
         self.mqtt_service = MqttService(mqtt_config,self.on_message)
@@ -48,7 +52,8 @@ class SpeakerManager():
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
 
     def generate_tts_audio(self, messageRecieved, speaker_id, language="en"):
-        file_generated = self.textToSpeechGenerator.generate_audio_file(messageRecieved, self.audio_output_filename, language)
+        audioGeneratedName = f"{self.sounds_folder}/{self.audio_output_filename}"
+        file_generated = self.textToSpeechGenerator.generate_audio_file(messageRecieved, audioGeneratedName, language)
         if(file_generated):
             self.audio_controller.add_new_audio_request("tts",speaker_id)
     
@@ -119,7 +124,15 @@ class SpeakerManager():
             speaker_aux.add_audio(audio_id)
             self.sendMessageToSpeaker(speaker_aux.id,"1")
         self.spotify_service.pause_song_if_necessary()
+        time.sleep(1)
+        self.reproduce_on_chromecasts(audio_config)
+        time.sleep(0.28)
         self.executeAplay(audio_config)
+
+    def reproduce_on_chromecasts(self,audio_config:AudioConfig):
+        audioName = audio_config.file_name
+        for device_aux in self.chromecast_list:
+            device_aux.play_audio(audioName)
         
 
     def stop_message(self,audio_requests:AudioRequests):
@@ -138,7 +151,6 @@ class SpeakerManager():
             self.logger.error(f"[Switch Speaker Error]: An exception occurred switching Speaker [id: {speaker_id}] status")
 
     def executeAplay(self,audio_config:AudioConfig):
-        time.sleep(1.5)
         audio_id = audio_config.id
         try:
             if(self.queue_files_playing.get(audio_id)!=None):
