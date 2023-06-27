@@ -126,7 +126,7 @@ class SpeakerManager():
         self.spotify_service.pause_song_if_necessary()
         time.sleep(1)
         self.reproduce_on_chromecasts(audio_config)
-        time.sleep(0.28)
+        #time.sleep(0.28)
         self.executeAplay(audio_config)
 
     def reproduce_on_chromecasts(self,audio_config:AudioConfig):
