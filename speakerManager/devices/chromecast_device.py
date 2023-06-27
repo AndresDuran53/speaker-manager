@@ -1,4 +1,5 @@
 import pychromecast
+import time
 
 class ChromecastAudioDevice():
     def __init__(self, friendly_name, filespath):
@@ -18,9 +19,14 @@ class ChromecastAudioDevice():
     
     def _play_media(self, media_url):
         self.cast.wait()
-        self.cast.media_controller.play_media(media_url, 'audio/wav')
-        self.cast.media_controller.block_until_active()
-        self.cast.media_controller.play()
+        mediaController = self.cast.media_controller
+        mediaController.play_media(media_url, 'audio/wav')
+        mediaController.block_until_active()
+        mediaController.play()
+        print(f"init mc {mediaController.status.player_is_playing}")
+        while(not mediaController.status.player_is_playing):
+            print(f"actual mc {mediaController.status.player_is_playing}")
+            time.sleep(0.05)
 
     def stop(self):
         if not self.cast:
