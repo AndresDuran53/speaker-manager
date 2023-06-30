@@ -1,8 +1,10 @@
 import pychromecast
 import time
+from devices.speaker_interface import Speaker
 
-class ChromecastAudioDevice():
+class ChromecastAudioDevice(Speaker):
     def __init__(self, friendly_name, filespath):
+        self.id = friendly_name
         self.cast = self._get_chromecast(friendly_name)
         self.filespath = filespath
 
@@ -19,20 +21,34 @@ class ChromecastAudioDevice():
     
     def _play_media(self, media_url):
         self.cast.wait()
-        mediaController = self.cast.media_controller
-        mediaController.play_media(media_url, 'audio/wav')
-        mediaController.block_until_active()
-        mediaController.play()
-        print(f"init mc {mediaController.status.player_is_playing}")
-        while(not mediaController.status.player_is_playing):
-            print(f"actual mc {mediaController.status.player_is_playing}")
-            time.sleep(0.05)
+        media_controller = self.cast.media_controller
+        media_controller.play_media(media_url, 'audio/wav')
+        media_controller.block_until_active()
+        media_controller.play()
+        while(not media_controller.status.player_is_playing):
+            time.sleep(0.02)
 
     def stop(self):
         if not self.cast:
             print("No se encontró el dispositivo Chromecast.")
             return
         self.cast.media_controller.stop()
+
+    def get_id(self):
+        return self.id 
+    
+    def have_to_be_turned_on(self):
+        return False
+    
+    def turn_off_if_apply(self): 
+        return None
+
+    @classmethod
+    def get_by_id(cls,speaker_list,speaker_id): 
+        for device in speaker_list:
+            if device.id == speaker_id:
+                return device
+        return None
 
     @staticmethod
     def list_from_json(json_data):

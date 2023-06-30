@@ -1,4 +1,7 @@
-class SpeakerDevice:
+from devices.speaker_interface import Speaker
+from services.mqtt_service import MqttService
+
+class SpeakerDevice(Speaker):
 
     def __init__(self, id=None, type=None, status=None, template=None, publish_topic=None, subscribe_topic=None):
         self.id = id
@@ -9,16 +12,32 @@ class SpeakerDevice:
         self.subscribe_topic = subscribe_topic
         self.speaker_status = False
         self.audio_list = []
+        self.mqtt_service = MqttService.get_instance()
+        self.mqtt_service.add_subscription(self.subscribe_topic)
+
+    def _send_message_to_speaker(self,status):
+        speakerPublishTopic = self.get_publish_topic()
+        message = self.get_parsed_message(status)
+        self.mqtt_service.send_message(speakerPublishTopic,message)
 
     def turn_on_speaker(self):
+        self._send_message_to_speaker("1")
         if not self.speaker_status:
             self.speaker_status = True
 
     def turn_off_speaker(self):
+        self._send_message_to_speaker("0")
         if self.speaker_status:
             self.speaker_status = False
 
-    def check_speaker_status(self):
+    def get_status(self):
+        return self.speaker_status
+
+    def parse_speaker_status(self,new_status):
+        if new_status == '0':
+            self.speaker_status = False
+        elif new_status == '1':
+            self.speaker_status = True
         return self.speaker_status
 
     def add_audio(self, audio_id):
@@ -34,11 +53,40 @@ class SpeakerDevice:
     def get_publish_topic(self):
         return self.publish_topic
     
+    def get_subscribe_topic(self):
+        return self.subscribe_topic
+    
     def get_parsed_message(self,status):
         template = self.template
-        statusSelected = self.status[status]
-        msg = template.replace("%_v%",statusSelected)
+        status_selected = self.status[status]
+        msg = template.replace("%_v%",status_selected)
         return msg
+    
+    def update_status_from_message(self,message):
+        template_parts = self.template.split("%_v%")
+        start_index = message.index(template_parts[0]) + len(template_parts[0])
+        end_index = message.index(template_parts[1], start_index)
+        if(end_index == 0): end_index = len(message)
+        status_value = message[start_index:end_index]
+        new_status = None
+        for key, value in self.status.items():
+            if value == status_value:
+                new_status = key
+                break
+        actual_status = self.parse_speaker_status(new_status)
+        print(f"Speaker status updated: {actual_status}")
+        return actual_status
+    
+    def get_id(self):
+        return self.id 
+    
+    def have_to_be_turned_on(self) -> bool:
+        was_on = self.get_status()
+        self.turn_on_speaker()
+        return not was_on
+    
+    def turn_off_if_apply(self): 
+        self.turn_off_speaker()
 
     @classmethod
     def from_json(cls, config_data):
@@ -60,8 +108,8 @@ class SpeakerDevice:
         return devices
 
     @classmethod
-    def get_by_id(cls, device_list, id):
-        for device in device_list:
-            if device.id == id:
+    def get_by_id(cls, speaker_list, speaker_id):
+        for device in speaker_list:
+            if device.id == speaker_id:
                 return device
         return None
