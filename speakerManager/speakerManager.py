@@ -119,7 +119,6 @@ class SpeakerManager():
     
     def find_speakers(self, rooms) -> list[SpeakerDevice]:
         speakers_found = []
-        if rooms == "all": return self.device_list[:]
         roomsFound = self.room_controller.get_rooms_from_topic(rooms)
         for room in roomsFound:
             for speaker_id in room.speakers:
