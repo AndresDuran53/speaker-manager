@@ -148,11 +148,14 @@ class SpeakerManager():
         self.executeAplay(speakers,audio_config)
 
     def reproduce_on_chromecasts(self, speakers: list[Speaker], audio_config:AudioConfig):
-        audioName = audio_config.file_name
-        for speaker in speakers:
-            for device_aux in self.chromecast_list:
-                if(speaker.get_id() == device_aux.get_id()):
-                    device_aux.play_audio(audioName)
+        try:
+            audioName = audio_config.file_name
+            for speaker in speakers:
+                for device_aux in self.chromecast_list:
+                    if(speaker.get_id() == device_aux.get_id()):
+                        device_aux.play_audio(audioName)
+        except:
+            self.logger.error("[Chromecast Error]: An exception occurred playing chromecast")
 
     def stop_message(self,audio_requests:AudioRequests):
         audio_id = audio_requests.audioId
@@ -167,7 +170,6 @@ class SpeakerManager():
                 self.logger.info("Audio already executing")
                 self.killAplayProcess(audio_config)
             self.reproduce_on_chromecasts(speakers,audio_config)
-            time.sleep(0.1)
             sub_process_aux = subprocess.Popen(['aplay', self.sounds_folder+audio_config.file_name])
             self.queue_files_playing[audio_id]=sub_process_aux
             time.sleep(0.5)
