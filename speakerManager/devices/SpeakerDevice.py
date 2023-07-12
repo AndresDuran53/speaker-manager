@@ -1,5 +1,6 @@
 from devices.speaker_interface import Speaker
 from services.mqtt_service import MqttService
+import time
 
 class SpeakerDevice(Speaker):
 
@@ -22,22 +23,22 @@ class SpeakerDevice(Speaker):
 
     def turn_on_speaker(self):
         self._send_message_to_speaker("1")
-        if not self.speaker_status:
-            self.speaker_status = True
 
     def turn_off_speaker(self):
         self._send_message_to_speaker("0")
-        if self.speaker_status:
-            self.speaker_status = False
 
     def get_status(self):
         return self.speaker_status
 
     def parse_speaker_status(self,new_status):
+        aux_status = False
         if new_status == '0':
-            self.speaker_status = False
+            aux_status = False
         elif new_status == '1':
-            self.speaker_status = True
+            aux_status = True
+        if(aux_status != self.speaker_status):
+            self.speaker_status = aux_status
+            print(f"Speaker status updated: {self.speaker_status}")
         return self.speaker_status
 
     def add_audio(self, audio_id):
@@ -74,7 +75,6 @@ class SpeakerDevice(Speaker):
                 new_status = key
                 break
         actual_status = self.parse_speaker_status(new_status)
-        print(f"Speaker status updated: {actual_status}")
         return actual_status
     
     def get_id(self):
@@ -82,8 +82,13 @@ class SpeakerDevice(Speaker):
     
     def have_to_be_turned_on(self) -> bool:
         was_on = self.get_status()
-        self.turn_on_speaker()
-        return not was_on
+        count_tries = 0
+        while not self.get_status() and count_tries<4:
+            self.turn_on_speaker()
+            count_tries+=1
+            time.sleep(0.5)
+        is_on = self.get_status()
+        return not was_on and is_on
     
     def turn_off_if_apply(self): 
         self.turn_off_speaker()

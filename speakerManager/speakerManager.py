@@ -196,11 +196,14 @@ class SpeakerManager():
 
 
     def remove_playing_file(self,audio_id):
-        if audio_id in self.queue_files_playing:
+        count_tries = 0
+        while audio_id in self.queue_files_playing and count_tries<10:
             del self.queue_files_playing[audio_id]
-            for speakerDevice in self.turned_on_speakers:
-                self.logger.info(f"Turning off {speakerDevice.id}")
-                speakerDevice.turn_off_if_apply()
+            count_tries+=1
+            time.sleep(0.2)
+        for speakerDevice in self.turned_on_speakers:
+            self.logger.info(f"Turning off {speakerDevice.id}")
+            speakerDevice.turn_off_if_apply()
 
     def run_loop(self):
         self.logger.info("Executing reproduceThreadLoop")
