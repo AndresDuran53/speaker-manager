@@ -86,7 +86,7 @@ class SpeakerDevice(Speaker):
         while not self.get_status() and count_tries<4:
             self.turn_on_speaker()
             count_tries+=1
-            time.sleep(0.5)
+            time.sleep(0.7)
         is_on = self.get_status()
         return not was_on and is_on
     
