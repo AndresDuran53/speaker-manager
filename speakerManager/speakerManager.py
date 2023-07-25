@@ -201,7 +201,8 @@ class SpeakerManager():
             del self.queue_files_playing[audio_id]
             count_tries+=1
             time.sleep(0.2)
-        for speakerDevice in self.turned_on_speakers:
+        while (len(self.turned_on_speakers)>0):
+            speakerDevice = self.turned_on_speakers.pop(-1)
             self.logger.info(f"Turning off {speakerDevice.id}")
             speakerDevice.turn_off_if_apply()
 
