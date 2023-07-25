@@ -80,16 +80,6 @@ class SpeakerDevice(Speaker):
     def get_id(self):
         return self.id 
     
-    def have_to_be_turned_on(self) -> bool:
-        was_on = self.get_status()
-        count_tries = 0
-        while not self.get_status() and count_tries<4:
-            self.turn_on_speaker()
-            count_tries+=1
-            time.sleep(0.7)
-        is_on = self.get_status()
-        return not was_on and is_on
-    
     def turn_off_if_apply(self): 
         self.turn_off_speaker()
 

@@ -37,8 +37,11 @@ class ChromecastAudioDevice(Speaker):
     def get_id(self):
         return self.id 
     
-    def have_to_be_turned_on(self):
-        return False
+    def get_status(self): 
+        return True
+    
+    def turn_on_speaker(self):
+        return None
     
     def turn_off_if_apply(self): 
         return None

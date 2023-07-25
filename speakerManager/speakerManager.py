@@ -137,14 +137,23 @@ class SpeakerManager():
         if(audio_config is None): return
 
         self.logger.info(f"Reproducing Audio: {audio_config.file_name}")
-        for speaker_aux in speakers:
-            self.logger.info(f"Speaker to play: {speaker_aux.id}")
-            was_turned_on = speaker_aux.have_to_be_turned_on()
-            if(was_turned_on):
-                self.turned_on_speakers.append(speaker_aux)
+        self.try_to_turn_on_speakers(speakers)
         self.spotify_service.pause_song_if_necessary()
-        time.sleep(2)
+        #time.sleep(2)
         self.executeAplay(speakers,audio_config)
+
+    def try_to_turn_on_speakers(self,speakers_list: list[SpeakerDevice]):
+        pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
+        count_tries = 0
+        while (len(pending_speakers)>0) and count_tries<4:
+            for speaker_aux in pending_speakers:
+                self.logger.info(f"Turning on speaker: {speaker_aux.id}")
+                speaker_aux.turn_on_speaker()
+                if speaker_aux not in self.turned_on_speakers:
+                    self.turned_on_speakers.append(speaker_aux)
+            time.sleep(0.5)
+            count_tries+=1
+            pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
 
     def reproduce_on_chromecasts(self, speakers: list[Speaker], audio_config:AudioConfig):
         try:
@@ -211,7 +220,7 @@ class SpeakerManager():
         while True:
             self.check_next_message()
             self.checkPlayingFiles()
-            time.sleep(0.5)
+            time.sleep(0.2)
 
     @classmethod
     def validate_config_values(cls,config_data):

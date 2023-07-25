@@ -5,7 +5,9 @@ class Speaker():
         
     def get_id(self) -> str: return id
 
-    def have_to_be_turned_on(self) -> bool: return False
+    def get_status(self) -> bool: return True
+
+    def turn_on_speaker(self): return None
 
     def turn_off_if_apply(self): return None
 
