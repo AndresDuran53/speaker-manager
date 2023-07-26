@@ -1,6 +1,17 @@
 class AudioController:
-    queueFilesToReproduce = []
-    queueFilesToStop = []
+    _instance = None
+    queueFilesToReproduce: list
+    queueFilesToStop: list
+    #----
+    queue_files_playing: dict
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.queueFilesToReproduce = []
+            cls._instance.queueFilesToStop = []
+            cls._instance.queue_files_playing = {}
+        return cls._instance
 
     def get_next_to_reproduce(self):
         if(len(self.queueFilesToReproduce)>0):
@@ -24,6 +35,18 @@ class AudioController:
             self.add_next_to_stop(audio_requests)    
         else:
             self.add_next_to_reproduce(audio_requests)
+    
+    def get_queue_files_playing(self):
+        return self.queue_files_playing
+
+    def is_audio_playing(self,audio_id:str):
+        return self.queue_files_playing.get(audio_id)!=None
+    
+    def link_process_with_audio(self,audio_id,sub_process):
+        self.queue_files_playing[audio_id]=sub_process
+
+    def remove_playing_audio(self,audio_id):
+        del self.queue_files_playing[audio_id]
 
 class AudioRequests():
     def __init__(self,audioId,rooms):

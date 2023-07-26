@@ -1,6 +1,6 @@
 import subprocess
 import time
-from devices.SpeakerDevice import SpeakerDevice
+from devices.speaker_device import SpeakerDevice
 from devices.chromecast_device import ChromecastAudioDevice
 from devices.speaker_interface import Speaker
 from utils.ConfigurationReader import ConfigurationReader
@@ -10,6 +10,8 @@ from services.spotify_service import SpotifyService, SpotifyConfig
 from controllers.audio_controller import AudioController, AudioRequests, AudioConfig
 from controllers.tts_controller import TextToSpeechGenerator
 from controllers.room_controller import RoomController
+from controllers.audio_speaker_manager import AudioSpeakerManager
+from controllers.audio_process_manager import AudioProcessManager
 
 class SpeakerManager():
     mqtt_service: MqttService
@@ -20,8 +22,6 @@ class SpeakerManager():
     speaker_list: list[SpeakerDevice]
     device_list: list[Speaker]
     chromecast_list: list[ChromecastAudioDevice]
-    turned_on_speakers: list[SpeakerDevice]
-    queue_files_playing: dict
     sounds_folder = "sounds/"
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
@@ -29,8 +29,6 @@ class SpeakerManager():
 
     def __init__(self):
         self.raspotify_status = False
-        self.queue_files_playing = {}
-        self.turned_on_speakers = []
         self.logger = CustomLogging(self.loggin_path)
         self.logger.info("Creating Speaker Manager...")
         self.update_config_values()
@@ -48,6 +46,11 @@ class SpeakerManager():
         self.logger.info("Creating Audio Controller...")
         self.audio_controller = AudioController()
         self.audios_list = AudioConfig.list_from_json(config_data)
+        #
+        self.audio_speaker_manager = AudioSpeakerManager()
+        #
+        self.audio_process_manager = AudioProcessManager()
+        self.audio_process_manager.set_sounds_folder(self.sounds_folder)
         #Set Rooms
         self.logger.info("Creating Room Controller...")
         self.room_controller = RoomController()
@@ -137,20 +140,22 @@ class SpeakerManager():
         if(audio_config is None): return
 
         self.logger.info(f"Reproducing Audio: {audio_config.file_name}")
-        self.try_to_turn_on_speakers(speakers)
+        self.try_to_turn_on_speakers(audio_id,speakers)
         self.spotify_service.pause_song_if_necessary()
         #time.sleep(2)
         self.executeAplay(speakers,audio_config)
 
-    def try_to_turn_on_speakers(self,speakers_list: list[SpeakerDevice]):
-        pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
+    def try_to_turn_on_speakers(self, audio_id: str, speakers_list: list[SpeakerDevice]):
+        pending_speakers = []
+        for speaker_unknow in speakers_list:
+            self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
+            if (not speaker_unknow.get_status()):
+                pending_speakers.append(speaker_unknow)
         count_tries = 0
         while (len(pending_speakers)>0) and count_tries<4:
             for speaker_aux in pending_speakers:
                 self.logger.info(f"Turning on speaker: {speaker_aux.id}")
                 speaker_aux.turn_on_speaker()
-                if speaker_aux not in self.turned_on_speakers:
-                    self.turned_on_speakers.append(speaker_aux)
             time.sleep(0.5)
             count_tries+=1
             pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
@@ -174,12 +179,12 @@ class SpeakerManager():
     def executeAplay(self,speakers,audio_config:AudioConfig):
         audio_id = audio_config.id
         try:
-            if(self.queue_files_playing.get(audio_id)!=None):
+            if(self.audio_controller.is_audio_playing(audio_id)):
                 self.logger.info("Audio already executing")
                 self.killAplayProcess(audio_config)
-            self.reproduce_on_chromecasts(speakers,audio_config)
-            sub_process_aux = subprocess.Popen(['aplay', self.sounds_folder+audio_config.file_name])
-            self.queue_files_playing[audio_id]=sub_process_aux
+            #self.reproduce_on_chromecasts(speakers,audio_config)
+            sub_process_aux = self.audio_process_manager.execute_audio_process(audio_config)
+            self.audio_controller.link_process_with_audio(audio_id,sub_process_aux)
             time.sleep(0.5)
         except:
             self.logger.error("[Aplay Error]: An exception occurred using Aplay")
@@ -188,38 +193,32 @@ class SpeakerManager():
         audio_id = audioConfig.id
         self.logger.info(f"Stopping Audio file: {audio_id}...")
         try:
-            sub_process_aux = self.queue_files_playing[audio_id]
-            sub_process_aux.kill()
+            self.audio_process_manager.kill_audio_process(audio_id)
             self.logger.info(f"Stopped")
         except:
             self.logger.error(f"Unable to kill audio file: {audio_id}")
 
-    def checkPlayingFiles(self):
-        if(len(list(self.queue_files_playing.keys()))>0):
-            for audio_id in list(self.queue_files_playing.keys()):
-                sub_process_aux = self.queue_files_playing[audio_id]
-                if sub_process_aux.poll() is not None:
-                    self.remove_playing_file(audio_id)
-            if(len(list(self.queue_files_playing.keys()))==0 and self.raspotify_status):
-                self.spotify_service.play_song()
-
+    def check_playing_files(self):
+        queue_files_playing = self.audio_controller.get_queue_files_playing()
+        for audio_id, sub_process_aux in list(queue_files_playing.items()):
+            if self.audio_process_manager.subprocess_ended(audio_id):
+                self.remove_playing_file(audio_id)
+        if not queue_files_playing and self.raspotify_status:
+            self.spotify_service.play_song()
 
     def remove_playing_file(self,audio_id):
-        count_tries = 0
-        while audio_id in self.queue_files_playing and count_tries<10:
-            del self.queue_files_playing[audio_id]
-            count_tries+=1
-            time.sleep(0.2)
-        while (len(self.turned_on_speakers)>0):
-            speakerDevice = self.turned_on_speakers.pop(-1)
-            self.logger.info(f"Turning off {speakerDevice.id}")
-            speakerDevice.turn_off_if_apply()
+        self.audio_controller.remove_playing_audio(audio_id)
+        self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
+        empty_speakers = self.audio_speaker_manager.get_empty_speakers()
+        for speaker_aux in empty_speakers:
+            self.logger.info(f"Turning off {speaker_aux.id}")
+            speaker_aux.turn_off_if_apply()
 
     def run_loop(self):
         self.logger.info("Executing reproduceThreadLoop")
         while True:
             self.check_next_message()
-            self.checkPlayingFiles()
+            self.check_playing_files()
             time.sleep(0.2)
 
     @classmethod
