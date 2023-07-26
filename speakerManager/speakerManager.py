@@ -182,7 +182,7 @@ class SpeakerManager():
             if(self.audio_controller.is_audio_playing(audio_id)):
                 self.logger.info("Audio already executing")
                 self.killAplayProcess(audio_config)
-            #self.reproduce_on_chromecasts(speakers,audio_config)
+            self.reproduce_on_chromecasts(speakers,audio_config)
             sub_process_aux = self.audio_process_manager.execute_audio_process(audio_config)
             self.audio_controller.link_process_with_audio(audio_id,sub_process_aux)
             time.sleep(0.5)
