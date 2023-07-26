@@ -211,8 +211,11 @@ class SpeakerManager():
         self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         for speaker_aux in empty_speakers:
-            self.logger.info(f"Turning off {speaker_aux.id}")
-            speaker_aux.turn_off_if_apply()
+            if(audio_id!='assistantRecognition'):
+                self.logger.info(f"Turning off {speaker_aux.id}")
+                speaker_aux.turn_off_if_apply()
+            else:
+                self.logger.info(f"Speakers will remain on due to Audio ID equals: assistantRecognition")
 
     def run_loop(self):
         self.logger.info("Executing reproduceThreadLoop")
