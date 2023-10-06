@@ -54,9 +54,12 @@ class AudioSpeakerManager():
         return True
     
     def remove_audio_from_all_speakers(self,audio_id):
+        speaker_list: list[SpeakerDevice] = []
         for speaker_queue_aux in self.playing_speakers:
             if audio_id in speaker_queue_aux.get_remaining_audios():
                 speaker_queue_aux.remove_audio(audio_id)
+                speaker_list.append(speaker_queue_aux.get_speaker())
+        return speaker_list
 
     
     

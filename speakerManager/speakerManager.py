@@ -148,8 +148,8 @@ class SpeakerManager():
     def try_to_turn_on_speakers(self, audio_id: str, speakers_list: list[SpeakerDevice]):
         pending_speakers = []
         for speaker_unknow in speakers_list:
-            self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
             if (not speaker_unknow.get_status()):
+                self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
                 pending_speakers.append(speaker_unknow)
         count_tries = 0
         while (len(pending_speakers)>0) and count_tries<4:
@@ -208,8 +208,8 @@ class SpeakerManager():
 
     def remove_playing_file(self,audio_id):
         self.audio_controller.remove_playing_audio(audio_id)
-        self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
-        empty_speakers = self.audio_speaker_manager.get_empty_speakers()
+        empty_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
+        #empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         for speaker_aux in empty_speakers:
             if(audio_id!='assistantRecognition'):
                 self.logger.info(f"Turning off {speaker_aux.id}")
