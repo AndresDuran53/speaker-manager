@@ -26,6 +26,7 @@ class SpeakerManager():
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
     audio_output_filename = "output.wav"
+    speakers_waiting = False
 
     def __init__(self):
         self.raspotify_status = False
@@ -209,12 +210,15 @@ class SpeakerManager():
     def remove_playing_file(self,audio_id):
         self.audio_controller.remove_playing_audio(audio_id)
         empty_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
-        #empty_speakers = self.audio_speaker_manager.get_empty_speakers()
+        if(self.speakers_waiting):
+            empty_speakers = self.audio_speaker_manager.get_empty_speakers()
+            self.speakers_waiting = False
         for speaker_aux in empty_speakers:
             if(audio_id!='assistantRecognition'):
                 self.logger.info(f"Turning off {speaker_aux.id}")
                 speaker_aux.turn_off_if_apply()
             else:
+                self.speakers_waiting = True
                 self.logger.info(f"Speakers will remain on due to Audio ID equals: assistantRecognition")
 
     def run_loop(self):
