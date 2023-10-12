@@ -1,4 +1,3 @@
-import subprocess
 import time
 from devices.speaker_device import SpeakerDevice
 from devices.chromecast_device import ChromecastAudioDevice
@@ -13,6 +12,7 @@ from controllers.tts_controller import TextToSpeechGenerator
 from controllers.room_controller import RoomController
 from controllers.audio_speaker_manager import AudioSpeakerManager
 from controllers.audio_process_manager import AudioProcessManager
+from controllers.volume_controller import VolumeController
 
 class SpeakerManager():
     mqtt_service: MqttService
@@ -103,6 +103,8 @@ class SpeakerManager():
             self.generate_tts_audio(message, rooms, "en")
         elif("Reproduce Tts-Es" == command_name):
             self.generate_tts_audio(message, rooms, "es")
+        elif("Set Volume" == command_name):
+            VolumeController.set_volume(message)
 
     def generate_tts_audio(self, message_recieved, rooms, language="en"):
         audioGeneratedName = f"{self.sounds_folder}/{self.audio_output_filename}"
