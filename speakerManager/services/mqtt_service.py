@@ -66,12 +66,14 @@ class MqttService:
     def get_command_from_topic(self, topic:str) -> str:
         splitted_topic = topic.split("/")
         for know_command in self.know_commands:
+            founded = True
             splitted_know_command = know_command["topic"].split("/")
             if(len(splitted_know_command) == len(splitted_topic)):
                 for i in range(len(splitted_know_command)):
                     if(splitted_know_command[i] != splitted_topic[i] and splitted_know_command[i] != '+'):
-                        return None
-                return know_command["commandName"]
+                        founded = False
+                if(founded):
+                    return know_command["commandName"]
         return None
 
     def extract_topic_and_payload(self, message):
