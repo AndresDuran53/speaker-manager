@@ -13,7 +13,7 @@ class SpeakerDevice(Speaker):
         self.subscribe_topic = subscribe_topic
         self.speaker_status = False
         self.audio_list = []
-        self.mqtt_service = MqttService.get_instance()
+        self.mqtt_service = MqttService()
         self.mqtt_service.add_subscription(self.subscribe_topic)
 
     def _send_message_to_speaker(self,status):
@@ -108,3 +108,9 @@ class SpeakerDevice(Speaker):
             if device.id == speaker_id:
                 return device
         return None
+    
+    @classmethod
+    def get_by_subs_topic(cls, speaker_list, subs_topic):
+        for speaker in speaker_list:
+            if(subs_topic == speaker.get_subscribe_topic()):
+                return speaker

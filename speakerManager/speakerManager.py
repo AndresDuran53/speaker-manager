@@ -42,7 +42,7 @@ class SpeakerManager():
         #Setting Mqtt config
         self.logger.info("Creating Mqtt Service...")
         mqtt_config = MqttConfig.from_json(config_data)
-        self.mqtt_service = MqttService.get_instance(mqtt_config,self.on_message)
+        self.mqtt_service = MqttService(mqtt_config=mqtt_config, on_message=self.on_message, logger=self.logger)
         #Set Audios
         self.logger.info("Creating Audio Controller...")
         self.audio_controller = AudioController()
@@ -67,40 +67,46 @@ class SpeakerManager():
         #Set TTS generator
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
 
-    def on_message(self,client, userdata, message):
-        topicRecieved, messageRecieved = MqttService.extract_topic_and_payload(message)
-        self.logger.debug(f"[Topic]: {topicRecieved} [Message Recieved]: {messageRecieved}")
+    def on_message(self, client, userdata, message):
+        topic_recieved, message_recieved = self.mqtt_service.extract_topic_and_payload(message)
 
-        if(MqttService.is_raspotify_topic(topicRecieved)):
-            self.update_raspotify_status(messageRecieved)
+        speaker_aux:SpeakerDevice = SpeakerDevice.get_by_subs_topic(self.speaker_list, topic_recieved)
+        if(speaker_aux):
+            speaker_aux.update_status_from_message(message_recieved)
+            return
+
+        command_name = self.mqtt_service.get_command_from_topic(topic_recieved)
+        if(command_name):
+            self.excecute_command(command_name, topic_recieved, message_recieved)
+            return
+            
+
+    def excecute_command(self, command_name, topic_recieved, message):
+        if("Raspotify Event" == command_name):
+            self.update_raspotify_status(message)
             return
         
-        for speaker in self.speaker_list:
-            if(topicRecieved == speaker.get_subscribe_topic()):
-                speaker.update_status_from_message(messageRecieved)
-                return
-        
-        rooms = topicRecieved.split("/")[-2]
-        if(MqttService.is_reproduce_topic(topicRecieved)):
-            self.audio_controller.add_new_audio_request(messageRecieved, rooms, stop=False)
-        elif(MqttService.is_stop_topic(topicRecieved)):
-            self.audio_controller.add_new_audio_request(messageRecieved, rooms, stop=True)
-        elif(MqttService.is_tts_topic(topicRecieved)):
-            self.generate_tts_audio(messageRecieved, rooms, "en")
-        elif(MqttService.is_tts_spanish_topic(topicRecieved)):
-            self.generate_tts_audio(messageRecieved, rooms, "es")
+        rooms = topic_recieved.split("/")[-2]
+        if("Reproduce Sound" == command_name):
+            self.audio_controller.add_new_audio_request(message, rooms, stop=False)
+        elif("Stop Sound" == command_name):
+            self.audio_controller.add_new_audio_request(message, rooms, stop=True)
+        elif("Reproduce Tts" == command_name):
+            self.generate_tts_audio(message, rooms, "en")
+        elif("Reproduce Tts-Es" == command_name):
+            self.generate_tts_audio(message, rooms, "es")
 
-    def generate_tts_audio(self, messageRecieved, rooms, language="en"):
+    def generate_tts_audio(self, message_recieved, rooms, language="en"):
         audioGeneratedName = f"{self.sounds_folder}/{self.audio_output_filename}"
-        file_generated = self.textToSpeechGenerator.generate_audio_file(messageRecieved, audioGeneratedName, language)
+        file_generated = self.textToSpeechGenerator.generate_audio_file(message_recieved, audioGeneratedName, language)
         if(file_generated):
             self.audio_controller.add_new_audio_request("tts",rooms)
 
-    def update_raspotify_status(self,messageRecieved):        
-        if(messageRecieved=="stopped"):
+    def update_raspotify_status(self,message_recieved):        
+        if(message_recieved=="stopped"):
             self.raspotify_status = False
             self.logger.info(f"New Raspotify Status: {self.raspotify_status}")
-        elif(messageRecieved == "playing" or messageRecieved == "paused" or messageRecieved == "changed"):
+        elif(message_recieved == "playing" or message_recieved == "paused" or message_recieved == "changed"):
             self.raspotify_status = True
             self.logger.info(f"New Raspotify Status: {self.raspotify_status}")
         else:
