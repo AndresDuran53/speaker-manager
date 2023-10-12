@@ -64,8 +64,13 @@ class MqttService:
         self.client.publish(topic,message,qos=1,retain=False)
 
     def get_command_from_topic(self, topic:str) -> str:
+        splitted_topic = topic.split("/")
         for know_command in self.know_commands:
-            if know_command["topic"] == topic:
+            splitted_know_command = know_command["topic"].split("/")
+            if(len(splitted_know_command) == len(splitted_topic)):
+                for i in range(len(splitted_know_command)):
+                    if(splitted_know_command[i] != splitted_topic[i] and splitted_know_command[i] != '+'):
+                        return None
                 return know_command["commandName"]
         return None
 

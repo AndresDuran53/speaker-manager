@@ -45,7 +45,7 @@ class AudioController:
         self.queue_files_playing[audio_id]=sub_process
 
     def remove_playing_audio(self, audio_id:str):
-        if(self.queue_files_playing.get(audio_id) is not None):
+        if (audio_id in self.queue_files_playing):
             del self.queue_files_playing[audio_id]
 
 class AudioRequests():

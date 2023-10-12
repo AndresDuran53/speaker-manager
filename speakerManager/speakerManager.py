@@ -79,7 +79,7 @@ class SpeakerManager():
         if(command_name):
             self.excecute_command(command_name, topic_recieved, message_recieved)
             return
-            
+
 
     def excecute_command(self, command_name, topic_recieved, message):
         if("Raspotify Event" == command_name):
@@ -134,7 +134,7 @@ class SpeakerManager():
         rooms = audio_requests.rooms
         audio_id = audio_requests.audioId
         speakers = self.find_speakers(rooms)
-        audio_config:AudioConfig = AudioConfig.get_by_id(audio_id)
+        audio_config = AudioConfig.get_by_id(self.audios_list,audio_id)
         if(audio_config is None):
             self.logger.warning(f"No audio filename found for {audio_id}")
             return
@@ -209,9 +209,10 @@ class SpeakerManager():
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
-        self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
+        removed_audio_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
-        for speaker_aux in empty_speakers:
+        speakers_to_turn_off = [speaker_aux for speaker_aux in removed_audio_speakers if speaker_aux in empty_speakers]
+        for speaker_aux in speakers_to_turn_off:
             if(audio_id!='assistantRecognition'):
                 self.logger.info(f"Turning off {speaker_aux.id}")
                 speaker_aux.turn_off_if_apply()
