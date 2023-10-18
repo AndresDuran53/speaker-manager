@@ -18,7 +18,6 @@ class SpeakerManager():
     mqtt_service: MqttService
     audio_controller: AudioController
     spotify_service: SpotifyService
-    raspotify_status: bool
     audios_list: list
     speaker_list: list[SpeakerDevice]
     device_list: list[Speaker]
@@ -221,11 +220,18 @@ class SpeakerManager():
             else:
                 self.logger.info(f"Speakers will remain on due to Audio ID equals: assistantRecognition")
 
+    def check_timeouts(self):
+        raspotify_audio_id = "raspotifyPlaying"
+        raspotify_timed_out = self.raspotify.activity_status_timed_out()
+        if(raspotify_timed_out):
+            self.remove_playing_file(raspotify_audio_id)
+
     def run_loop(self):
         self.logger.info("Executing reproduceThreadLoop")
         while True:
             self.check_next_message()
             self.check_playing_files()
+            self.check_timeouts()
             time.sleep(0.2)
 
     @classmethod

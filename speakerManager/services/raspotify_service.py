@@ -25,11 +25,9 @@ class RaspotifyService:
         return False
 
     def get_status(self) -> bool:
-        self.activity_status_timed_out()
         return self._status
     
     def is_active(self) -> bool:
-        self.activity_status_timed_out()
         return self._is_active
     
     def get_last_modified(self) -> datetime:
