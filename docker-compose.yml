@@ -1,0 +1,21 @@
+version: '3'
+services:
+  speakerManager:
+    build:
+      #context: ./virtual-home-assistant/gptassistant-image
+      context: .
+      dockerfile: Dockerfile
+    image: speaker-manager-image
+    container_name: speaker-manager
+    privileged: true
+    restart: unless-stopped
+    environment:
+      - TZ=America/Costa_Rica
+    group_add:
+      - audio
+    volumes:
+      #- /usr/local/gptAssistant/logs:/gptAssistant/logs
+      - ALSA_CARD=Generic  # Cambia esto según tu configuración
+    devices:
+      - /dev/snd:/dev/snd
+    network_mode: host
