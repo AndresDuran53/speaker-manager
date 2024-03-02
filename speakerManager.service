@@ -3,12 +3,12 @@ Description=Speaker monitor service
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/python3 -u /home/developer/scripts/speaker-manager/speakerManager/speakerManager.py
-WorkingDirectory=/home/developer/scripts/speaker-manager/
+ExecStart=/usr/bin/python3 -u /home/sneer/scripts/speaker-manager/speakerManager/speakerManager.py
+WorkingDirectory=/home/sneer/scripts/speaker-manager/
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
-User=developer
+User=sneer
 
 [Install]
 WantedBy=multi-user.target
