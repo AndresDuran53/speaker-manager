@@ -4,7 +4,8 @@ class VolumeController:
 
     @staticmethod
     def _execute_command(volume):
-        command = f'amixer set PCM -M {volume}%'
+        #command = f'amixer set PCM -M {volume}%'
+        command = f'pactl set-sink-volume @DEFAULT_SINK@ {volume}%'
         subprocess.run(command, shell=True)
 
     @staticmethod

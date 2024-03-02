@@ -25,6 +25,7 @@ class AudioProcessManager():
     def _play_audio(self, audio_config: AudioConfig):
         while audio_config:
             file_path = self.sounds_folder + audio_config.file_name
+            print(f"Executing path in Aplay: {file_path}")
             audio_subprocess = Popen(['aplay', file_path])
             with self.lock:
                 self.subprocess_playing[audio_config.id] = audio_subprocess

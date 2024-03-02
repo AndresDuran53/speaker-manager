@@ -162,6 +162,7 @@ class SpeakerManager():
             pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
 
     def reproduce_on_chromecasts(self, speakers: list[Speaker], audio_config:AudioConfig):
+        self.logger.info(f"[Chromecasts] Reproducing Audio on Chromecasts: {speakers}")
         try:
             audioName = audio_config.file_name
             for speaker in speakers:
@@ -170,6 +171,7 @@ class SpeakerManager():
                         device_aux.play_audio(audioName)
         except:
             self.logger.error("[Chromecast Error]: An exception occurred playing chromecast")
+        self.logger.info(f"[Chromecasts] Done.")
 
     def stop_message(self, audio_requests:AudioRequests):
         audio_id = audio_requests.audioId
