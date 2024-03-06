@@ -36,6 +36,7 @@ class SpeakerManager():
 
     def update_config_values(self):
         self.logger.info("Updating configuration Values")
+        self.speaker_list = []
         config_data = ConfigurationReader().read_config_file()
         SpeakerManager.validate_config_values(config_data)
         #Setting Mqtt config

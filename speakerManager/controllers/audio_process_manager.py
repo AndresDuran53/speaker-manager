@@ -1,4 +1,5 @@
 import threading
+import os
 from subprocess import Popen
 
 class AudioConfig:
@@ -20,6 +21,8 @@ class AudioProcessManager():
             cls._instance.subprocess_queue = []
             cls._instance.lock = threading.Lock()
             cls._instance.sounds_folder = ""
+            os.environ["PULSE_SERVER"] = "unix:/run/user/1000/pulse/native"
+            os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
         return cls._instance
 
     def _play_audio(self, audio_config: AudioConfig):
