@@ -1,21 +1,18 @@
 version: '3'
 services:
-  speakerManager:
+  speaker-manager:
     build:
-      #context: ./virtual-home-assistant/gptassistant-image
-      context: .
+      context: ./speaker-manager
       dockerfile: Dockerfile
     image: speaker-manager-image
     container_name: speaker-manager
-    privileged: true
     restart: unless-stopped
+    #privileged: true
+    volumes:
+      - /run/user/1000/pulse:/run/user/1000/pulse
+      - /etc/machine-id:/etc/machine-id
+      - ~/.config/pulse/cookie:/home/sneer/.config/pulse/cookie
+      #- /usr/local/speakerManager/logs:/logs
     environment:
       - TZ=America/Costa_Rica
-    group_add:
-      - audio
-    volumes:
-      #- /usr/local/gptAssistant/logs:/gptAssistant/logs
-      - ALSA_CARD=Generic  # Cambia esto según tu configuración
-    devices:
-      - /dev/snd:/dev/snd
     network_mode: host
