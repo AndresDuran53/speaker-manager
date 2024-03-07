@@ -7,8 +7,6 @@ ENV TZ="America/Costa_Rica"
 
 WORKDIR /home
 
-COPY requirements.txt requirements.txt
-
 RUN groupadd -g 1000 sneer
 RUN useradd -u 1000 -g sneer sneer
 
@@ -30,9 +28,10 @@ RUN mkdir -p /home/sneer/.config/pulse && \
 ENV PULSE_SERVER=unix:/run/user/1000/pulse/native
 ENV XDG_RUNTIME_DIR=/run/user/1000
 
-RUN pip3 install -r requirements.txt
+# Change the user and group
+COPY --chown=sneer:sneer . .
 
-COPY . .
+RUN pip3 install -r requirements.txt
 
 USER sneer
 
