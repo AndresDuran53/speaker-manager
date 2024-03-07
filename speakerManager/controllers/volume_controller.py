@@ -5,7 +5,8 @@ class VolumeController:
 
     @staticmethod
     def _execute_command(volume):
-        command = f"amixer -c {VolumeController.audio_card_index} set 'Master' {volume}%"
+        #command = f"amixer -c {VolumeController.audio_card_index} set 'Master' {volume}%"
+        command = f"amixer set 'Master' {volume}%"
         subprocess.run(command, shell=True)
 
     @staticmethod
