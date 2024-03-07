@@ -1,12 +1,11 @@
 import subprocess
 
 class VolumeController:
+    audio_card_index = 0
 
     @staticmethod
     def _execute_command(volume):
-        #command = f'amixer set PCM -M {volume}%'
-        #command = f'pactl set-sink-volume @DEFAULT_SINK@ {volume}%'
-        command = f"amixer -c 1 set 'Master' {volume}%"
+        command = f"amixer -c {VolumeController.audio_card_index} set 'Master' {volume}%"
         subprocess.run(command, shell=True)
 
     @staticmethod
