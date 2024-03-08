@@ -15,20 +15,19 @@ from controllers.audio_process_manager import AudioProcessManager
 from controllers.volume_controller import VolumeController
 
 class SpeakerManager():
-    mqtt_service: MqttService
-    audio_controller: AudioController
-    spotify_service: SpotifyService
-    audios_list: list
-    speaker_list: list[SpeakerDevice]
-    device_list: list[Speaker]
-    chromecast_list: list[ChromecastAudioDevice]
+    mqtt_service: MqttService = None
+    audio_controller: AudioController = None
+    spotify_service: SpotifyService = None
+    audios_list: list = []
+    speaker_list: list[SpeakerDevice] = []
+    device_list: list[Speaker] = []
+    chromecast_list: list[ChromecastAudioDevice] = []
     sounds_folder = "sounds/"
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
     audio_output_filename = "output.wav"
 
     def __init__(self):
-        self.raspotify = RaspotifyService()
         self.logger = CustomLogging(self.loggin_path)
         self.logger.info("Creating Speaker Manager...")
         self.update_config_values()
@@ -36,9 +35,10 @@ class SpeakerManager():
 
     def update_config_values(self):
         self.logger.info("Updating configuration Values")
-        self.speaker_list = []
         config_data = ConfigurationReader().read_config_file()
         SpeakerManager.validate_config_values(config_data)
+        #Raspotify
+        self.raspotify = RaspotifyService()
         #Setting Mqtt config
         self.logger.info("Creating Mqtt Service...")
         mqtt_config = MqttConfig.from_json(config_data)
