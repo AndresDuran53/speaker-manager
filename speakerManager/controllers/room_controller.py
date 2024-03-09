@@ -1,3 +1,5 @@
+from utils.custom_logging import CustomLogging
+
 class Room:
     name: str
     speakers: list[str]
@@ -10,16 +12,18 @@ class Room:
         self.speakers.append(speaker_id)
 
 class RoomController:
-    _instance = None
+    __instance = None
     rooms: list
 
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(RoomController, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+        if not cls.__instance:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
     
-    def __init__(self):
+    def __init__(self, logger:CustomLogging):
         if not hasattr(self, 'rooms'):
+            self.logger = logger
+            self.logger.info("Creating Room Controller...")
             self._configuration()
             
     def _configuration(self):

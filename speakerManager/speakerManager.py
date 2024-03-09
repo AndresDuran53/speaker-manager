@@ -37,35 +37,42 @@ class SpeakerManager():
         self.logger.info("Updating configuration Values")
         config_data = ConfigurationReader().read_config_file()
         SpeakerManager.validate_config_values(config_data)
-        #Raspotify
-        self.raspotify = RaspotifyService()
+
         #Setting Mqtt config
-        self.logger.info("Creating Mqtt Service...")
         mqtt_config = MqttConfig.from_json(config_data)
         self.mqtt_service = MqttService(mqtt_config=mqtt_config, on_message=self.on_message, logger=self.logger)
+
         #Set Audios
-        self.logger.info("Creating Audio Controller...")
-        self.audio_controller = AudioController()
+        self.audio_controller = AudioController(logger=self.logger)
         self.audios_list = AudioConfig.list_from_json(config_data)
+
         #Set AudioSpeakerManager
-        self.audio_speaker_manager = AudioSpeakerManager()
+        self.audio_speaker_manager = AudioSpeakerManager(logger=self.logger)
+
         #Set AudioProcessManager
-        self.audio_process_manager = AudioProcessManager()
+        self.audio_process_manager = AudioProcessManager(logger=self.logger)
         self.audio_process_manager.set_sounds_folder(self.sounds_folder)
+
         #Set Rooms
-        self.logger.info("Creating Room Controller...")
-        self.room_controller = RoomController()
+        self.room_controller = RoomController(logger=self.logger)
         self.room_controller.add_rooms_from_json(config_data)
+
         #Set Devices
         self.speaker_list = SpeakerDevice.list_from_json(config_data)
+
         #Set Chromecast Devices
         self.chromecast_list = ChromecastAudioDevice.list_from_json(config_data)
         self.device_list = self.speaker_list[:] + self.chromecast_list[:]
+
         #Set Spotify config
         config = SpotifyConfig.from_json(config_data)
-        self.spotify_service = SpotifyService(config)
+        self.spotify_service = SpotifyService(config, logger=self.logger)
+
+        #Raspotify
+        self.raspotify = RaspotifyService(logger=self.logger)
+        
         #Set TTS generator
-        self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file)
+        self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file, logger=self.logger)
 
     def on_message(self, client, userdata, message):
         topic_recieved, message_recieved = self.mqtt_service.extract_topic_and_payload(message)

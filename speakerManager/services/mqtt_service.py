@@ -36,6 +36,7 @@ class MqttService:
         if not hasattr(self, 'client'):
             if mqtt_config is None or on_message is None or client_id is None:
                 raise ValueError('MQTT configuration not found at object creation')
+            logger.info("Creating New Mqtt Service...")
             self._configuration(mqtt_config, on_message, client_id, logger)
 
     def _configuration(self, mqtt_config:MqttConfig, on_message, client_id:str, logger:CustomLogging):

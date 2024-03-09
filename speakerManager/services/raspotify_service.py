@@ -1,11 +1,14 @@
 from datetime import datetime
+from utils.custom_logging import CustomLogging
 
 class RaspotifyService:
     _status: bool
     _is_active: bool
     _last_modified: datetime
 
-    def __init__(self, status = "stopped", is_active = False) -> None:
+    def __init__(self, status = "stopped", is_active = False, logger=CustomLogging("logs/raspotify.log")) -> None:
+        self.logger = logger
+        self.logger.info("Creating Raspotify Service...")
         self._status = status
         self._is_active = is_active
         self._last_modified = datetime.now()

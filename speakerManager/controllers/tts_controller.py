@@ -1,6 +1,7 @@
 import os
 from services.google_tts_service import GoogleTTSService
 from utils.csv_storage import CSVStorage
+from utils.custom_logging import CustomLogging
 
 class TextToSpeechGenerator:
     tts_handler = None
@@ -9,7 +10,9 @@ class TextToSpeechGenerator:
     max_characters_per_month = 900000
     used_chars_filename = 'data/charactersSended.txt'
 
-    def __init__(self,config_file):
+    def __init__(self,config_file, logger:CustomLogging):
+        self.logger = logger
+        self.logger.info("Creating TextToSpeechGenerator Controller...")
         self.set_google_as_tts_handler(config_file)
         self.storage_characters_used = CSVStorage(self.used_chars_filename)
 

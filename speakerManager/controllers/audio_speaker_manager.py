@@ -1,4 +1,5 @@
 from devices.speaker_device import SpeakerDevice
+from utils.custom_logging import CustomLogging
 
 class SpeakerAudioQueue():
     speaker: SpeakerDevice
@@ -32,11 +33,15 @@ class AudioSpeakerManager():
     _instance = None
     playing_speakers: list[SpeakerAudioQueue]
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.playing_speakers = []
         return cls._instance
+    
+    def __init__(self, logger:CustomLogging) -> None:
+        self.logger = logger
+        self.logger.info("Creating AudioSpeaker Manager...")
     
     def get_empty_speakers(self):
         empty_speakers = [speaker_queue_aux.get_speaker() for speaker_queue_aux in self.playing_speakers if len(speaker_queue_aux.get_remaining_audios())==0]

@@ -1,5 +1,6 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from utils.custom_logging import CustomLogging
 
 class SpotifyDevice:
     def __init__(self, device_dict):
@@ -26,7 +27,9 @@ class SpotifyDevice:
 
 class SpotifyService:
 
-    def __init__(self, config):
+    def __init__(self, config, logger:CustomLogging):
+        self.logger = logger
+        self.logger.info("Creating Spotify Service...")
         self.config = config
         self.wasPaused = False
         self.volume_decrease = 0.8

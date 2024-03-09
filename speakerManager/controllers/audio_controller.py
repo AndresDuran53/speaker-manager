@@ -1,16 +1,22 @@
+from utils.custom_logging import CustomLogging
+
 class AudioController:
     _instance = None
     queueFilesToReproduce: list
     queueFilesToStop: list
     queue_files_playing: dict
     
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.queueFilesToReproduce = []
             cls._instance.queueFilesToStop = []
             cls._instance.queue_files_playing = {}
         return cls._instance
+    
+    def __init__(self, logger:CustomLogging) -> None:
+        self.logger = logger
+        self.logger.info("Creating Audio Controller...")
 
     def get_next_to_reproduce(self):
         if(len(self.queueFilesToReproduce)>0):

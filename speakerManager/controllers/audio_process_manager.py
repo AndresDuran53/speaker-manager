@@ -1,6 +1,7 @@
 import threading
 import os
 from subprocess import Popen
+from utils.custom_logging import CustomLogging
 
 class AudioConfig:
     def __init__(self, id=None, file_name=None):
@@ -14,7 +15,7 @@ class AudioProcessManager():
     lock: threading.Lock
     sounds_folder: str
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.subprocess_playing = {}
@@ -24,6 +25,10 @@ class AudioProcessManager():
             os.environ["PULSE_SERVER"] = "unix:/run/user/1000/pulse/native"
             os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
         return cls._instance
+    
+    def __init__(self, logger:CustomLogging) -> None:
+        self.logger = logger
+        self.logger.info("Creating AudioProcess Manager...")
 
     def _play_audio(self, audio_config: AudioConfig):
         while audio_config:
