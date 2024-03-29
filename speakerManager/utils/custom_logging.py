@@ -21,5 +21,5 @@ class CustomLogging:
         timestamp = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         final_message = f'[{timestamp}] {level} - {message}\n'
         print(final_message)
-        with open(self.file_name, 'a') as file:
+        with open(self.file_name, 'a+') as file:
             file.write(final_message)
