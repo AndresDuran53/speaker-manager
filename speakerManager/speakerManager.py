@@ -148,13 +148,13 @@ class SpeakerManager():
             self.logger.warning(f"No audio filename found for {audio_id}")
             return
 
-        self.logger.info("Turning on Speakers...")
         self.try_to_turn_on_speakers(audio_id,speakers)
         self.spotify_service.pause_song_if_necessary()
         #time.sleep(2)
         self.executeAplay(speakers,audio_config)
 
     def try_to_turn_on_speakers(self, audio_id: str, speakers_list: list[SpeakerDevice]):
+        self.logger.info("Turning on Speakers...")
         pending_speakers = []
         for speaker_unknow in speakers_list:
             self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
@@ -194,7 +194,7 @@ class SpeakerManager():
             if(self.audio_controller.is_audio_playing(audio_id)):
                 self.logger.info("Audio already executing")
                 self.killAplayProcess(audio_config)
-            self.reproduce_on_chromecasts(speakers,audio_config)
+            #self.reproduce_on_chromecasts(speakers,audio_config)
             sub_process_aux = self.audio_process_manager.execute_audio_process(audio_config)
             self.audio_controller.link_process_with_audio(audio_id,sub_process_aux)
             time.sleep(0.5)
@@ -215,12 +215,14 @@ class SpeakerManager():
         for audio_id, sub_process_aux in list(queue_files_playing.items()):
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
-        if not queue_files_playing and self.raspotify.is_active():
+        if not queue_files_playing and self.spotify_service.is_raspotify_playing():
             self.spotify_service.play_song()
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
         removed_audio_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
+        # Keep Speakers on if spotify is playing on the house
+        #if(self.spotify_service.is_raspotify_playing()): return
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         speakers_to_turn_off = [speaker_aux for speaker_aux in removed_audio_speakers if speaker_aux in empty_speakers]
         for speaker_aux in speakers_to_turn_off:

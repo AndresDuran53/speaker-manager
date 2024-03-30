@@ -1,6 +1,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from utils.custom_logging import CustomLogging
+import time
 
 class SpotifyDevice:
     def __init__(self, device_dict):
@@ -26,12 +27,14 @@ class SpotifyDevice:
         return device_list
 
 class SpotifyService:
+    home_spotify_name = "Spotifyd@sneer-server"
 
-    def __init__(self, config, logger:CustomLogging):
+    def __init__(self, config, logger=CustomLogging("logs/spotify.log")):
         self.logger = logger
         self.logger.info("Creating Spotify Service...")
         self.config = config
         self.wasPaused = False
+        self.last_volume = 0
         self.volume_decrease = 0.8
 
     def get_spotify_object(self):
@@ -49,12 +52,18 @@ class SpotifyService:
         try:
             sp = self.get_spotify_object()
             is_raspotify_device_playing = self.is_raspotify_playing(sp)
+            self.logger.info(f"is_raspotify_device_playing: {is_raspotify_device_playing}")
             if(is_raspotify_device_playing):
                 raspotify_device = self.get_raspotify_device(sp)
                 actual_volume = raspotify_device.volume_percent
-                sp.volume(int(actual_volume*self.volume_decrease))
+                self.last_volume = actual_volume
+                self.logger.info(f"actual_volume: {actual_volume}")
+                new_volume = int(actual_volume*self.volume_decrease)
+                self.logger.info(f"New Volume : {new_volume}")
+                sp.volume(new_volume)
                 #sp.pause_playback(raspotify_id)
                 self.wasPaused = True
+                time.sleep(0.5)
         except:
             print("[Error] Not able to pause song")   
 
@@ -64,8 +73,8 @@ class SpotifyService:
             if(self.wasPaused):
                 #sp.start_playback()
                 raspotify_device = self.get_raspotify_device(sp)
-                actual_volume = raspotify_device.volume_percent
-                sp.volume(int(actual_volume//self.volume_decrease))
+                self.logger.info(f"Setting volumen again to: {self.last_volume}")
+                sp.volume(self.last_volume)
                 self.wasPaused = False
         except:
             print("[Error] Not able to authorize profile")   
@@ -91,7 +100,7 @@ class SpotifyService:
         if(sp is None): sp = self.get_spotify_object()
         spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
-            if(spotifyDevice.name == 'raspotify (homeassistant)'):
+            if(spotifyDevice.name == self.home_spotify_name):
                 return spotifyDevice
         return None
     
@@ -99,7 +108,7 @@ class SpotifyService:
         if(sp is None): sp = self.get_spotify_object()
         spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
-            if(spotifyDevice.name == 'raspotify (homeassistant)'):
+            if(spotifyDevice.name == self.home_spotify_name):
                 return spotifyDevice.id
         return None
     
