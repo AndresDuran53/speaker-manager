@@ -3,8 +3,7 @@ from services.spotify_service import SpotifyService, SpotifyConfig
 import time
 
 config_data = ConfigurationReader().read_config_file()
-config = SpotifyConfig.from_json(config_data)
-spotify_service = SpotifyService(config)
+spotify_service = SpotifyService(config_data)
 
 devices = spotify_service.get_devices()
 print(f"devices {devices}")
