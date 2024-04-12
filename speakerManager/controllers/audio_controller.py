@@ -1,7 +1,35 @@
 from utils.custom_logging import CustomLogging
 
+class AudioRequests():
+    def __init__(self,audioId,rooms):
+        self.audioId = audioId
+        self.rooms = rooms
+
+class AudioConfig:
+    def __init__(self, id=None, file_name=None):
+        self.id = id
+        self.file_name = file_name
+
+    @classmethod
+    def from_json(cls, audio_data):
+        audio_config = AudioConfig(
+            id=audio_data['id'],
+            file_name=audio_data['file_name']
+        )
+        return audio_config
+    
+    @classmethod
+    def list_from_json(cls,config_data):
+        audios = []
+        for audio_data in config_data['audios']:
+            audio_config = cls.from_json(audio_data)
+            audios.append(audio_config)
+        return audios
+
+
 class AudioController:
     _instance = None
+    audios_list: list[AudioConfig]
     queueFilesToReproduce: list
     queueFilesToStop: list
     queue_files_playing: dict
@@ -9,14 +37,16 @@ class AudioController:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance.audios_list = []
             cls._instance.queueFilesToReproduce = []
             cls._instance.queueFilesToStop = []
             cls._instance.queue_files_playing = {}
         return cls._instance
     
-    def __init__(self, logger:CustomLogging) -> None:
+    def __init__(self, config_data, logger:CustomLogging) -> None:
         self.logger = logger
         self.logger.info("Creating Audio Controller...")
+        self.audios_list = AudioConfig.list_from_json(config_data)
 
     def get_next_to_reproduce(self):
         if(len(self.queueFilesToReproduce)>0):
@@ -54,35 +84,8 @@ class AudioController:
         if (audio_id in self.queue_files_playing):
             del self.queue_files_playing[audio_id]
 
-class AudioRequests():
-    def __init__(self,audioId,rooms):
-        self.audioId = audioId
-        self.rooms = rooms
-
-class AudioConfig:
-    def __init__(self, id=None, file_name=None):
-        self.id = id
-        self.file_name = file_name
-
-    @classmethod
-    def from_json(cls, audio_data):
-        audio_config = AudioConfig(
-            id=audio_data['id'],
-            file_name=audio_data['file_name']
-        )
-        return audio_config
-    
-    @classmethod
-    def list_from_json(cls,config_data):
-        audios = []
-        for audio_data in config_data['audios']:
-            audio_config = cls.from_json(audio_data)
-            audios.append(audio_config)
-        return audios
-    
-    @classmethod
-    def get_by_id(cls, audio_configs, audio_id):
-        for audio_config in audio_configs:
+    def get_audio_config_by_id(self, audio_id):
+        for audio_config in self.audios_list:
             if audio_config.id == audio_id:
                 return audio_config
         return None

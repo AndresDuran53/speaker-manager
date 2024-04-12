@@ -63,7 +63,7 @@ class SpeakerDevice(Speaker):
         msg = template.replace("%_v%",status_selected)
         return msg
     
-    def update_status_from_message(self,message):
+    def update_status_from_message(self, message):
         template_parts = self.template.split("%_v%")
         start_index = message.index(template_parts[0]) + len(template_parts[0])
         end_index = message.index(template_parts[1], start_index)
@@ -84,7 +84,7 @@ class SpeakerDevice(Speaker):
         self.turn_off_speaker()
 
     @classmethod
-    def from_json(cls, config_data):
+    def from_json(cls, config_data:dict):
         return cls(
             id=config_data.get('id', None),
             type=config_data.get('type', None),

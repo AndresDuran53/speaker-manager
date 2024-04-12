@@ -25,14 +25,25 @@ class SpotifyDevice:
             device_obj = cls.from_json(device)
             device_list.append(device_obj)
         return device_list
+    
+class SpotifyConfig:
+    def __init__(self, spotify_dict):
+        self.client_id = spotify_dict.get('clientId', None)
+        self.client_secret = spotify_dict.get('clientSecret', None)
+        self.redirect_url = spotify_dict.get('redirectUrl', None)
+        self.scope = "user-read-playback-state user-modify-playback-state user-top-read user-read-recently-played"
+
+    @classmethod
+    def from_json(cls, config_data):
+        return SpotifyConfig(config_data.get('spotify', {}))
 
 class SpotifyService:
     home_spotify_name = "Spotifyd@sneer-server"
 
-    def __init__(self, config, logger=CustomLogging("logs/spotify.log")):
+    def __init__(self, config_data, logger=CustomLogging("logs/spotify.log")):
         self.logger = logger
         self.logger.info("Creating Spotify Service...")
-        self.config = config
+        self.config = SpotifyConfig.from_json(config_data)
         self.wasPaused = False
         self.last_volume = 0
         self.volume_decrease = 0.8
@@ -124,14 +135,3 @@ class SpotifyService:
 
     def test(self):
         self.pause_song_if_necessary()
-
-class SpotifyConfig:
-    def __init__(self, spotify_dict):
-        self.client_id = spotify_dict.get('clientId', None)
-        self.client_secret = spotify_dict.get('clientSecret', None)
-        self.redirect_url = spotify_dict.get('redirectUrl', None)
-        self.scope = "user-read-playback-state user-modify-playback-state user-top-read user-read-recently-played"
-
-    @classmethod
-    def from_json(cls, config_data):
-        return SpotifyConfig(config_data.get('spotify', {}))

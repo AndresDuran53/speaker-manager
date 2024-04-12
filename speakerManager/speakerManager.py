@@ -18,14 +18,13 @@ class SpeakerManager():
     mqtt_service: MqttService = None
     audio_controller: AudioController = None
     spotify_service: SpotifyService = None
-    audios_list: list = []
     speaker_list: list[SpeakerDevice] = []
-    device_list: list[Speaker] = []
     chromecast_list: list[ChromecastAudioDevice] = []
     sounds_folder = "sounds/"
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
     audio_output_filename = "output.wav"
+    configuration_completed = False
 
     def __init__(self):
         self.logger = CustomLogging(self.loggin_path)
@@ -43,38 +42,38 @@ class SpeakerManager():
         self.mqtt_service = MqttService(mqtt_config=mqtt_config, on_message=self.on_message, logger=self.logger)
 
         #Set Audios
-        self.audio_controller = AudioController(logger=self.logger)
-        self.audios_list = AudioConfig.list_from_json(config_data)
+        self.audio_controller = AudioController(config_data, logger=self.logger)
 
         #Set AudioSpeakerManager
         self.audio_speaker_manager = AudioSpeakerManager(logger=self.logger)
 
         #Set AudioProcessManager
-        self.audio_process_manager = AudioProcessManager(logger=self.logger)
-        self.audio_process_manager.set_sounds_folder(self.sounds_folder)
+        self.audio_process_manager = AudioProcessManager(self.sounds_folder, logger=self.logger)
 
         #Set Rooms
-        self.room_controller = RoomController(logger=self.logger)
-        self.room_controller.add_rooms_from_json(config_data)
+        self.room_controller = RoomController(config_data, logger=self.logger)
 
         #Set Devices
         self.speaker_list = SpeakerDevice.list_from_json(config_data)
 
         #Set Chromecast Devices
         self.chromecast_list = ChromecastAudioDevice.list_from_json(config_data)
-        self.device_list = self.speaker_list[:] + self.chromecast_list[:]
 
         #Set Spotify config
-        config = SpotifyConfig.from_json(config_data)
-        self.spotify_service = SpotifyService(config, logger=self.logger)
+        self.spotify_service = SpotifyService(config_data, logger=self.logger)
 
         #Raspotify
         self.raspotify = RaspotifyService(logger=self.logger)
         
         #Set TTS generator
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file, logger=self.logger)
+        
+        self.configuration_completed = True
 
     def on_message(self, client, userdata, message):
+        if(not self.configuration_completed):
+            return
+        
         topic_recieved, message_recieved = self.mqtt_service.extract_topic_and_payload(message)
 
         speaker_aux:SpeakerDevice = SpeakerDevice.get_by_subs_topic(self.speaker_list, topic_recieved)
@@ -88,7 +87,7 @@ class SpeakerManager():
             return
 
 
-    def excecute_command(self, command_name, topic_recieved, message):
+    def excecute_command(self, command_name:str, topic_recieved:str, message:str):
         if("Raspotify Event" == command_name):
             raspotify_changed = self.raspotify.update_status(message)
             if(raspotify_changed):
@@ -101,7 +100,10 @@ class SpeakerManager():
                     self.remove_playing_file(raspotify_audio_id)
             return
         
-        rooms = topic_recieved.split("/")[-2]
+        topic_recieved_split = topic_recieved.split("/")
+        if(len(topic_recieved_split)<2): return
+        rooms = topic_recieved_split[-2]
+        
         if("Reproduce Sound" == command_name):
             self.audio_controller.add_new_audio_request(message, rooms, stop=False)
         elif("Stop Sound" == command_name):
@@ -128,11 +130,12 @@ class SpeakerManager():
             self.stop_message(next_to_stop)
     
     def find_speakers(self, rooms) -> list[SpeakerDevice]:
+        device_list: list[Speaker] = self.speaker_list[:] + self.chromecast_list[:]
         speakers_found = []
         roomsFound = self.room_controller.get_rooms_from_topic(rooms)
         for room in roomsFound:
             for speaker_id in room.speakers:
-                speaker_found = Speaker.get_by_id(self.device_list, speaker_id)
+                speaker_found = Speaker.get_by_id(device_list, speaker_id)
                 if (speaker_found is None):
                     self.logger.warning(f"No speaker {speaker_id} found")
                 else:
@@ -143,7 +146,7 @@ class SpeakerManager():
         rooms = audio_requests.rooms
         audio_id = audio_requests.audioId
         speakers = self.find_speakers(rooms)
-        audio_config = AudioConfig.get_by_id(self.audios_list,audio_id)
+        audio_config = self.audio_controller.get_audio_config_by_id(audio_id)
         if(audio_config is None):
             self.logger.warning(f"No audio filename found for {audio_id}")
             return
@@ -183,9 +186,9 @@ class SpeakerManager():
 
     def stop_message(self, audio_requests:AudioRequests):
         audio_id = audio_requests.audioId
-        audioConfig = AudioConfig.get_by_id(self.audios_list,audio_id)
-        if(audioConfig==None): return # Close if not filename founded
-        self.killAplayProcess(audioConfig)
+        audio_config = self.audio_controller.get_audio_config_by_id(audio_id)
+        if(audio_config==None): return # Close if not filename founded
+        self.killAplayProcess(audio_config)
 
     def executeAplay(self, speakers, audio_config:AudioConfig):
         self.logger.info(f"Reproducing Audio: {audio_config.file_name}")

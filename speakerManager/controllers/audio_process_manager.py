@@ -26,9 +26,10 @@ class AudioProcessManager():
             os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
         return cls._instance
     
-    def __init__(self, logger:CustomLogging) -> None:
+    def __init__(self, sounds_folder: str, logger:CustomLogging) -> None:
         self.logger = logger
         self.logger.info("Creating AudioProcess Manager...")
+        self.sounds_folder = sounds_folder
 
     def _play_audio(self, audio_config: AudioConfig):
         while audio_config:
@@ -46,9 +47,6 @@ class AudioProcessManager():
                     audio_config = self.subprocess_queue.pop(0)
                 else:
                     audio_config = None
-
-    def set_sounds_folder(self,sounds_folder):
-        self.sounds_folder = sounds_folder
 
     def execute_audio_process(self, audio_config: AudioConfig):
         with self.lock:

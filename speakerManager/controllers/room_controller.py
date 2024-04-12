@@ -20,11 +20,12 @@ class RoomController:
             cls.__instance = super().__new__(cls)
         return cls.__instance
     
-    def __init__(self, logger:CustomLogging):
+    def __init__(self, config_data, logger:CustomLogging):
         if not hasattr(self, 'rooms'):
             self.logger = logger
             self.logger.info("Creating Room Controller...")
             self._configuration()
+            self.add_rooms_from_json(config_data)
             
     def _configuration(self):
         self.rooms = []
