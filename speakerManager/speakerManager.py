@@ -88,12 +88,12 @@ class SpeakerManager():
 
 
     def excecute_command(self, command_name:str, topic_recieved:str, message:str):
-        if("Raspotify Event" == command_name):
+        if("Spotify Event" == command_name):
             raspotify_changed = self.raspotify.update_status(message)
             if(raspotify_changed):
                 raspotify_is_active = self.raspotify.is_active()
-                self.logger.info(f"New Raspotify Status: {raspotify_is_active}")
-                raspotify_audio_id = "raspotifyPlaying"
+                self.logger.info(f"New Spotify Status: {raspotify_is_active}")
+                raspotify_audio_id = "spotifyPlaying"
                 if(raspotify_is_active):
                     self.try_to_turn_on_speakers(raspotify_audio_id,self.speaker_list)
                 else:
