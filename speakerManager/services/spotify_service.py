@@ -38,7 +38,7 @@ class SpotifyConfig:
         return SpotifyConfig(config_data.get('spotify', {}))
 
 class SpotifyService:
-    home_spotify_name = "Spotifyd@sneer-server"
+    home_spotify_name = "Spotify-HomeServer"
 
     def __init__(self, config_data, logger=CustomLogging("logs/spotify.log")):
         self.logger = logger
