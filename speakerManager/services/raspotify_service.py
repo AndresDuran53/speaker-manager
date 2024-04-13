@@ -18,7 +18,7 @@ class RaspotifyService:
         self._status = message_recieved
         if(message_recieved=="stop"):
             new_active_state = False
-        elif(message_recieved == "start" or message_recieved == "play" or message_recieved == "pause" or message_recieved == "load"):
+        elif(message_recieved == "start" or message_recieved == "play" or message_recieved == "pause" or message_recieved == "change"):
             new_active_state = True
 
         if(new_active_state is not None and new_active_state != self._is_active):
