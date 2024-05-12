@@ -18,6 +18,7 @@ class SpeakerManager():
     mqtt_service: MqttService = None
     audio_controller: AudioController = None
     spotify_service: SpotifyService = None
+    use_spotify_service = False
     speaker_list: list[SpeakerDevice] = []
     chromecast_list: list[ChromecastAudioDevice] = []
     sounds_folder = "sounds/"
@@ -60,7 +61,8 @@ class SpeakerManager():
         self.chromecast_list = ChromecastAudioDevice.list_from_json(config_data)
 
         #Set Spotify config
-        self.spotify_service = SpotifyService(config_data, logger=self.logger)
+        if(self.use_spotify_service):
+            self.spotify_service = SpotifyService(config_data, logger=self.logger)
 
         #Raspotify
         self.raspotify = RaspotifyService(logger=self.logger)
@@ -152,7 +154,8 @@ class SpeakerManager():
             return
 
         self.try_to_turn_on_speakers(audio_id,speakers)
-        self.spotify_service.pause_song_if_necessary()
+        if(self.use_spotify_service):
+            self.spotify_service.pause_song_if_necessary()
         #time.sleep(2)
         self.executeAplay(speakers,audio_config)
 
@@ -218,8 +221,8 @@ class SpeakerManager():
         for audio_id, sub_process_aux in list(queue_files_playing.items()):
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
-        #if not queue_files_playing and self.spotify_service.is_raspotify_playing():
-            #self.spotify_service.play_song()
+        if self.use_spotify_service and (not queue_files_playing and self.spotify_service.is_raspotify_playing()):
+            self.spotify_service.play_song()
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
