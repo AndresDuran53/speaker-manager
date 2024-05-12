@@ -58,10 +58,12 @@ class AudioController:
             return self.queueFilesToStop.pop(0)
         return None
     
-    def add_next_to_reproduce(self, audioRequests):
+    def add_next_to_reproduce(self, audioRequests: AudioRequests):
+        self.logger.info(f"Adding new audio to reproduce in queue: [{audioRequests.audioId}] to rooms: [{audioRequests.rooms}]")
         self.queueFilesToReproduce.append(audioRequests)
         
-    def add_next_to_stop(self, audioRequests):
+    def add_next_to_stop(self, audioRequests: AudioRequests):
+        self.logger.info(f"Adding new audio to stop: [{audioRequests.audioId}] to rooms: [{audioRequests.rooms}]")
         self.queueFilesToStop.append(audioRequests)
 
     def add_new_audio_request(self, audioId, rooms, stop=False):
