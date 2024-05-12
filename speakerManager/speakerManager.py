@@ -218,8 +218,8 @@ class SpeakerManager():
         for audio_id, sub_process_aux in list(queue_files_playing.items()):
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
-        if not queue_files_playing and self.spotify_service.is_raspotify_playing():
-            self.spotify_service.play_song()
+        #if not queue_files_playing and self.spotify_service.is_raspotify_playing():
+            #self.spotify_service.play_song()
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
