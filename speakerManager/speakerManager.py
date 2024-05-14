@@ -40,7 +40,7 @@ class SpeakerManager():
 
         #Setting Mqtt config
         mqtt_config = MqttConfig.from_json(config_data)
-        self.mqtt_service = MqttService(mqtt_config=mqtt_config, on_message=self.on_message, logger=self.logger)
+        self.mqtt_service = MqttService(mqtt_config=mqtt_config, process_message=self.read_new_message, logger=self.logger)
 
         #Set Audios
         self.audio_controller = AudioController(config_data, logger=self.logger)
@@ -72,12 +72,10 @@ class SpeakerManager():
         
         self.configuration_completed = True
 
-    def on_message(self, client, userdata, message):
+    def read_new_message(self, topic_recieved: str, message_recieved: str):
         if(not self.configuration_completed):
             return
         
-        topic_recieved, message_recieved = self.mqtt_service.extract_topic_and_payload(message)
-
         speaker_aux:SpeakerDevice = SpeakerDevice.get_by_subs_topic(self.speaker_list, topic_recieved)
         if(speaker_aux):
             speaker_aux.update_status_from_message(message_recieved)
