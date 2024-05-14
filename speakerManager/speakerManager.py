@@ -6,7 +6,7 @@ from utils.ConfigurationReader import ConfigurationReader
 from utils.custom_logging import CustomLogging
 from services.mqtt_service import MqttService, MqttConfig
 from services.spotify_service import SpotifyService, SpotifyConfig
-from services.raspotify_service import LibreSpotService
+from speakerManager.services.librespot_service import LibreSpotService
 from controllers.audio_controller import AudioController, AudioRequests, AudioConfig
 from controllers.tts_controller import TextToSpeechGenerator
 from controllers.room_controller import RoomController
