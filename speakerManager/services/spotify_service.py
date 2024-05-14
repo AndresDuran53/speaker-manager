@@ -31,6 +31,7 @@ class SpotifyConfig:
         self.client_id = spotify_dict.get('clientId', None)
         self.client_secret = spotify_dict.get('clientSecret', None)
         self.redirect_url = spotify_dict.get('redirectUrl', None)
+        self.home_spotify_name = "Spotify-HomeServer"
         self.scope = "user-read-playback-state user-modify-playback-state user-top-read user-read-recently-played"
 
     @classmethod
@@ -38,12 +39,12 @@ class SpotifyConfig:
         return SpotifyConfig(config_data.get('spotify', {}))
 
 class SpotifyService:
-    home_spotify_name = "Spotify-HomeServer"
 
     def __init__(self, config_data, logger=CustomLogging("logs/spotify.log")):
         self.logger = logger
         self.logger.info("Creating Spotify Service...")
         self.config = SpotifyConfig.from_json(config_data)
+        self.home_spotify_name = self.config.home_spotify_name
         self.wasPaused = False
         self.last_volume = 0
         self.volume_decrease = 0.8
@@ -51,12 +52,13 @@ class SpotifyService:
     def get_spotify_object(self):
         sp = None
         try:
-            sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id,
-                                                        client_secret=self.config.client_secret,
-                                                        redirect_uri=self.config.redirect_url,
-                                                        scope=self.config.scope))
+            sp = spotipy.Spotify(retries=0, auth_manager=SpotifyOAuth(
+                client_id=self.config.client_id,
+                client_secret=self.config.client_secret,
+                redirect_uri=self.config.redirect_url,
+                scope=self.config.scope))
         except:
-            print("[Error] Not able to authorize profile")   
+            print("[Error] Not able to authorize profile")
         return sp
 
     def pause_song_if_necessary(self):
