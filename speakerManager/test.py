@@ -12,7 +12,7 @@ for device in devices:
     print(device.id)
 
 print(spotify_service.is_playing())
-print(spotify_service.is_raspotify_playing())
+print(spotify_service.is_librespot_playing())
 spotify_service.pause_song_if_necessary()
 time.sleep(2)
 #spotify_service.play_song()

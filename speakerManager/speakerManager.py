@@ -6,7 +6,7 @@ from utils.ConfigurationReader import ConfigurationReader
 from utils.custom_logging import CustomLogging
 from services.mqtt_service import MqttService, MqttConfig
 from services.spotify_service import SpotifyService, SpotifyConfig
-from services.raspotify_service import RaspotifyService
+from services.raspotify_service import LibreSpotService
 from controllers.audio_controller import AudioController, AudioRequests, AudioConfig
 from controllers.tts_controller import TextToSpeechGenerator
 from controllers.room_controller import RoomController
@@ -64,8 +64,8 @@ class SpeakerManager():
         if(self.use_spotify_service):
             self.spotify_service = SpotifyService(config_data, logger=self.logger)
 
-        #Raspotify
-        self.raspotify = RaspotifyService(logger=self.logger)
+        #Spotify Speaker
+        self.librespot = LibreSpotService(logger=self.logger)
         
         #Set TTS generator
         self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file, logger=self.logger)
@@ -91,15 +91,14 @@ class SpeakerManager():
 
     def excecute_command(self, command_name:str, topic_recieved:str, message:str):
         if("Spotify Event" == command_name):
-            raspotify_changed = self.raspotify.update_status(message)
-            if(raspotify_changed):
-                raspotify_is_active = self.raspotify.is_active()
-                self.logger.info(f"New Spotify Status: {raspotify_is_active}")
-                raspotify_audio_id = "spotifyPlaying"
-                if(raspotify_is_active):
-                    self.try_to_turn_on_speakers(raspotify_audio_id,self.speaker_list)
+            librespot_changed = self.librespot.update_status(message)
+            if(librespot_changed):
+                librespot_is_active = self.librespot.is_active()
+                spotify_audio_id = self.librespot.get_audio_id()
+                if(librespot_is_active):
+                    self.try_to_turn_on_speakers(spotify_audio_id,self.speaker_list)
                 else:
-                    self.remove_playing_file(raspotify_audio_id)
+                    self.remove_playing_file(spotify_audio_id)
             return
         
         topic_recieved_split = topic_recieved.split("/")
@@ -221,14 +220,14 @@ class SpeakerManager():
         for audio_id, sub_process_aux in list(queue_files_playing.items()):
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
-        if self.use_spotify_service and (not queue_files_playing and self.spotify_service.is_raspotify_playing()):
+        if self.use_spotify_service and (not queue_files_playing and self.spotify_service.is_librespot_playing()):
             self.spotify_service.play_song()
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
         removed_audio_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
         # Keep Speakers on if spotify is playing on the house
-        #if(self.spotify_service.is_raspotify_playing()): return
+        #if(self.spotify_service.is_librespot_playing()): return
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         speakers_to_turn_off = [speaker_aux for speaker_aux in removed_audio_speakers if speaker_aux in empty_speakers]
         for speaker_aux in speakers_to_turn_off:
@@ -239,10 +238,10 @@ class SpeakerManager():
                 self.logger.info(f"Speakers will remain on due to Audio ID equals: assistantRecognition")
 
     def check_timeouts(self):
-        raspotify_audio_id = "raspotifyPlaying"
-        raspotify_timed_out = self.raspotify.activity_status_timed_out()
-        if(raspotify_timed_out):
-            self.remove_playing_file(raspotify_audio_id)
+        spotify_audio_id = self.librespot.get_audio_id()
+        spotify_timed_out = self.librespot.activity_status_timed_out()
+        if(spotify_timed_out):
+            self.remove_playing_file(spotify_audio_id)
 
     def run_loop(self):
         self.logger.info("Executing reproduceThreadLoop")

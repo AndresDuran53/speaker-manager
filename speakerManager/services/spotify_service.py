@@ -64,17 +64,16 @@ class SpotifyService:
     def pause_song_if_necessary(self):
         try:
             sp = self.get_spotify_object()
-            is_raspotify_device_playing = self.is_raspotify_playing(sp)
-            self.logger.info(f"is_raspotify_device_playing: {is_raspotify_device_playing}")
-            if(is_raspotify_device_playing):
-                raspotify_device = self.get_raspotify_device(sp)
-                actual_volume = raspotify_device.volume_percent
+            is_librespot_device_playing = self.is_librespot_playing(sp)
+            self.logger.info(f"is_librespot_device_playing: {is_librespot_device_playing}")
+            if(is_librespot_device_playing):
+                librespot_device = self.get_librespot_device(sp)
+                actual_volume = librespot_device.volume_percent
                 self.last_volume = actual_volume
                 self.logger.info(f"actual_volume: {actual_volume}")
                 new_volume = int(actual_volume*self.volume_decrease)
                 self.logger.info(f"New Volume : {new_volume}")
                 sp.volume(new_volume)
-                #sp.pause_playback(raspotify_id)
                 self.wasPaused = True
                 time.sleep(0.5)
         except:
@@ -85,7 +84,7 @@ class SpotifyService:
             sp = self.get_spotify_object()
             if(self.wasPaused):
                 #sp.start_playback()
-                raspotify_device = self.get_raspotify_device(sp)
+                librespot_device = self.get_librespot_device(sp)
                 self.logger.info(f"Setting volumen again to: {self.last_volume}")
                 sp.volume(self.last_volume)
                 self.wasPaused = False
@@ -109,7 +108,7 @@ class SpotifyService:
         spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
         return spotifyDevice_list
     
-    def get_raspotify_device(self,sp=None):
+    def get_librespot_device(self,sp=None):
         if(sp is None): sp = self.get_spotify_object()
         spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
@@ -117,7 +116,7 @@ class SpotifyService:
                 return spotifyDevice
         return None
     
-    def get_raspotify_id(self,sp=None):
+    def get_librespot_id(self,sp=None):
         if(sp is None): sp = self.get_spotify_object()
         spotifyDevice_list = self.get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
@@ -125,10 +124,10 @@ class SpotifyService:
                 return spotifyDevice.id
         return None
     
-    def is_raspotify_playing(self,sp=None):
+    def is_librespot_playing(self,sp=None):
         if(sp is None): sp = self.get_spotify_object()
-        raspotify_device = self.get_raspotify_device(sp)
-        if(raspotify_device is not None and raspotify_device.is_active):
+        librespot_device = self.get_librespot_device(sp)
+        if(librespot_device is not None and librespot_device.is_active):
             playing_track = sp.current_user_playing_track()
             if(playing_track is not None):
                 isPlaying = playing_track[u'is_playing']

@@ -1,19 +1,20 @@
 from datetime import datetime
 from utils.custom_logging import CustomLogging
 
-class RaspotifyService:
+class LibreSpotService:
+    _audio_id: str = "spotifyPlaying"
     _status: bool
     _is_active: bool
     _last_modified: datetime
 
-    def __init__(self, status = "stop", is_active = False, logger=CustomLogging("logs/raspotify.log")) -> None:
+    def __init__(self, status = "stop", is_active = False, logger=CustomLogging("logs/librespot.log")) -> None:
         self.logger = logger
-        self.logger.info("Creating Raspotify Service...")
+        self.logger.info("Creating LibreSpot Service...")
         self._status = status
         self._is_active = is_active
         self._last_modified = datetime.now()
 
-    def update_status(self,message_recieved) -> bool:
+    def update_status(self, message_recieved: str) -> bool:
         new_active_state = None
         self._status = message_recieved
         if(message_recieved=="stop"):
@@ -24,8 +25,12 @@ class RaspotifyService:
         if(new_active_state is not None and new_active_state != self._is_active):
             self._is_active = new_active_state
             self._last_modified = datetime.now()
+            self.logger.info(f"New LibreSpot Status: {new_active_state}")
             return True
         return False
+    
+    def get_audio_id(self) -> str:
+        return self._audio_id
 
     def get_status(self) -> bool:
         return self._status
