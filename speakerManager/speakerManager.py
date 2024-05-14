@@ -76,11 +76,13 @@ class SpeakerManager():
         if(not self.configuration_completed):
             return
         
+        #If the message is a command to a speaker
         speaker_aux:SpeakerDevice = SpeakerDevice.get_by_subs_topic(self.speaker_list, topic_recieved)
         if(speaker_aux):
             speaker_aux.update_status_from_message(message_recieved)
             return
 
+        #If the message is a command to the program
         command_name = self.mqtt_service.get_command_from_topic(topic_recieved)
         if(command_name):
             self.excecute_command(command_name, topic_recieved, message_recieved)
