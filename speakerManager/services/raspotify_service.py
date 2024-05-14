@@ -6,7 +6,7 @@ class RaspotifyService:
     _is_active: bool
     _last_modified: datetime
 
-    def __init__(self, status = "stopped", is_active = False, logger=CustomLogging("logs/raspotify.log")) -> None:
+    def __init__(self, status = "stop", is_active = False, logger=CustomLogging("logs/raspotify.log")) -> None:
         self.logger = logger
         self.logger.info("Creating Raspotify Service...")
         self._status = status
@@ -37,7 +37,7 @@ class RaspotifyService:
         return self._last_modified
     
     def activity_status_timed_out(self) -> bool:
-        if(self._is_active and self._status != "started" and self._status != "playing"):
+        if(self._is_active and self._status != "start" and self._status != "play"):
             current_time = datetime.now()
             time_difference = current_time - self._last_modified
             if time_difference.total_seconds() >= 3600:
@@ -46,5 +46,5 @@ class RaspotifyService:
         return False
     
     def execute_time_out(self):
-        self._status = "stopped"
+        self._status = "stop"
         self._is_active = False
