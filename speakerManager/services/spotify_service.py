@@ -114,18 +114,24 @@ class SpotifyService:
         else:
             return False
         
+    def is_librespot_playing(self) -> bool:
+        sp = self.sp
+        is_playing = self._update_is_playing(sp)
+        if(not is_playing): return False
+        self.logger.info(f"Spotify is playing")
+
+        librespot_device = self._update_librespot_device(sp)
+        if(librespot_device is None or not librespot_device.is_active): return False
+
+        self.logger.info(f"Spotify is playing on LibreSpot Device")
+        return True
+        
     def decrease_volume_if_necessary(self):
         try:
             sp = self.sp
-            is_playing = self._update_is_playing(sp)
-            if(not is_playing): return
-            self.logger.info(f"Spotify is playing")
+            if(not self.is_librespot_playing()): return
 
-            librespot_device = self._update_librespot_device(sp)
-            if(librespot_device is None or not librespot_device.is_active): return
-
-            self.logger.info(f"Spotify is playing on LibreSpot Device")
-            
+            librespot_device = self._librespot_device            
             actual_volume = librespot_device.volume_percent
             self.last_volume = actual_volume
             self.logger.info(f"Spotify Actual Volume: {actual_volume}")
@@ -147,3 +153,7 @@ class SpotifyService:
                 self.volume_decreased = False
         except:
             self.logger.error(f"Not able to restore the spotify volume")
+
+    def has_to_restore_volume(self):
+        if(not self.volume_decreased): return False
+        if(self.is_librespot_playing()): return True

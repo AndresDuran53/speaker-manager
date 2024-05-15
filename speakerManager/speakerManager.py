@@ -18,7 +18,7 @@ class SpeakerManager():
     mqtt_service: MqttService = None
     audio_controller: AudioController = None
     spotify_service: SpotifyService = None
-    use_spotify_service = False
+    use_spotify_service = True
     speaker_list: list[SpeakerDevice] = []
     chromecast_list: list[ChromecastAudioDevice] = []
     sounds_folder = "sounds/"
@@ -219,7 +219,7 @@ class SpeakerManager():
         for audio_id, sub_process_aux in list(queue_files_playing.items()):
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
-        if self.use_spotify_service and (not queue_files_playing and self.spotify_service.is_librespot_playing()):
+        if (self.use_spotify_service and not queue_files_playing and self.spotify_service.has_to_restore_volume()):
             self.spotify_service.restore_volume()
 
     def remove_playing_file(self, audio_id:str):
