@@ -150,6 +150,7 @@ class SpotifyService:
                 #sp.start_playback()
                 self.logger.info(f"Setting volumen again to: {self.last_volume}")
                 sp.volume(self.last_volume)
+                self._librespot_device.volume_percent = self.last_volume
                 self.volume_decreased = False
         except:
             self.logger.error(f"Not able to restore the spotify volume")
