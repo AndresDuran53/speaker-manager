@@ -153,7 +153,7 @@ class SpeakerManager():
 
         self.try_to_turn_on_speakers(audio_id,speakers)
         if(self.use_spotify_service):
-            self.spotify_service.pause_song_if_necessary()
+            self.spotify_service.decrease_volume_if_necessary()
         #time.sleep(2)
         self.executeAplay(speakers,audio_config)
 
@@ -220,7 +220,7 @@ class SpeakerManager():
             if self.audio_process_manager.subprocess_ended(audio_id):
                 self.remove_playing_file(audio_id)
         if self.use_spotify_service and (not queue_files_playing and self.spotify_service.is_librespot_playing()):
-            self.spotify_service.play_song()
+            self.spotify_service.restore_volume()
 
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
