@@ -64,19 +64,20 @@ class SpotifyService:
                 redirect_uri=self.config.redirect_url,
                 scope=self.config.scope))
         except:
-            print("[Error] Not able to authorize profile")
+            self.logger.error(f"Not able to authorize spotify profile")
         return sp
     
     def _update_is_playing(self, sp: spotipy.Spotify) -> bool:
         if(not self._can_update(self._playing_last_modified,30)): return self._is_spotify_playing
 
+        self.logger.info(f"Updating Spotify is_playing status")
         isPlaying = False
         try:
             playing_track = sp.current_user_playing_track()
             if(playing_track is not None):
                 isPlaying = playing_track[u'is_playing']
         except:
-            print("[Error] Not able to get song status")
+            self.logger.error(f"Not able to get spotify song status")
         self._playing_last_modified = datetime.now()
         self._is_spotify_playing = isPlaying  
         return isPlaying
@@ -87,12 +88,13 @@ class SpotifyService:
             devices_list = sp.devices()
             spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
         except:
-            print("[Error] Not able to get devices")
+            self.logger.error(f"Not able to get spotify devices")
         return spotifyDevice_list
     
     def _update_librespot_device(self, sp: spotipy.Spotify) -> SpotifyDevice:
         if(not self._can_update(self._device_last_modified,10)): return self._librespot_device
 
+        self.logger.info(f"Updating Spotify librespot_device object")
         spotifyDevice_list = self._get_devices(sp)
         for spotifyDevice in spotifyDevice_list:
             if(spotifyDevice.name == self.home_spotify_name):
@@ -117,6 +119,7 @@ class SpotifyService:
             sp = self.sp
             is_playing = self._update_is_playing(sp)
             if(not is_playing): return
+            self.logger.info(f"Spotify is playing")
 
             librespot_device = self._update_librespot_device(sp)
             if(librespot_device is None or not librespot_device.is_active): return
@@ -125,14 +128,14 @@ class SpotifyService:
             
             actual_volume = librespot_device.volume_percent
             self.last_volume = actual_volume
-            self.logger.info(f"Actual Volume: {actual_volume}")
+            self.logger.info(f"Spotify Actual Volume: {actual_volume}")
             new_volume = int(actual_volume*self.volume_decrease_value)
-            self.logger.info(f"New Volume : {new_volume}")
+            self.logger.info(f"Spotify New Volume : {new_volume}")
             sp.volume(new_volume)
             self.volume_decreased = True
             time.sleep(0.5)
         except:
-            print("[Error] Not able to pause song")
+            self.logger.error(f"Not able to decrease the spotify volume")
 
     def restore_volume(self):
         try:
@@ -143,4 +146,4 @@ class SpotifyService:
                 sp.volume(self.last_volume)
                 self.volume_decreased = False
         except:
-            print("[Error] Not able to authorize profile")
+            self.logger.error(f"Not able to restore the spotify volume")
