@@ -225,8 +225,6 @@ class SpeakerManager():
     def remove_playing_file(self, audio_id:str):
         self.audio_controller.remove_playing_audio(audio_id)
         removed_audio_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
-        # Keep Speakers on if spotify is playing on the house
-        #if(self.spotify_service.is_librespot_playing()): return
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         speakers_to_turn_off = [speaker_aux for speaker_aux in removed_audio_speakers if speaker_aux in empty_speakers]
         for speaker_aux in speakers_to_turn_off:
