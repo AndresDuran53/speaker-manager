@@ -1,6 +1,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from utils.custom_logging import CustomLogging
+from datetime import datetime
 import time
 
 class SpotifyDevice:
@@ -39,6 +40,10 @@ class SpotifyConfig:
         return SpotifyConfig(config_data.get('spotify', {}))
 
 class SpotifyService:
+    _is_spotify_playing: bool = False
+    _playing_last_modified: datetime = None
+    _librespot_device = None
+    _device_last_modified: datetime = None
 
     def __init__(self, config_data, logger=CustomLogging("logs/spotify.log")):
         self.logger = logger
@@ -48,8 +53,9 @@ class SpotifyService:
         self.wasPaused = False
         self.last_volume = 0
         self.volume_decrease = 0.8
+        self.sp = self.get_spotify_object()
 
-    def get_spotify_object(self):
+    def get_spotify_object(self) -> spotipy.Spotify:
         sp = None
         try:
             sp = spotipy.Spotify(retries=0, auth_manager=SpotifyOAuth(
@@ -60,79 +66,81 @@ class SpotifyService:
         except:
             print("[Error] Not able to authorize profile")
         return sp
+    
+    def update_is_playing(self, sp: spotipy.Spotify) -> bool:
+        if(not self.can_update(self._playing_last_modified,30)): return self._is_spotify_playing
 
+        isPlaying = False
+        try:
+            playing_track = sp.current_user_playing_track()
+            if(playing_track is not None):
+                isPlaying = playing_track[u'is_playing']
+        except:
+            print("[Error] Not able to get song status")
+        self._playing_last_modified = datetime.now()
+        self._is_spotify_playing = isPlaying  
+        return isPlaying
+    
+    def get_devices(self, sp: spotipy.Spotify) -> list[SpotifyDevice]:
+        spotifyDevice_list = []
+        try:
+            devices_list = sp.devices()
+            spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
+        except:
+            print("[Error] Not able to get devices")
+        return spotifyDevice_list
+    
+    def update_librespot_device(self, sp: spotipy.Spotify):
+        if(not self.can_update(self._device_last_modified,10)): return self._librespot_device
+
+        spotifyDevice_list = self.get_devices(sp)
+        for spotifyDevice in spotifyDevice_list:
+            if(spotifyDevice.name == self.home_spotify_name):
+                self._device_last_modified = datetime.now()
+                self._librespot_device = spotifyDevice
+                return spotifyDevice
+        self._device_last_modified = datetime.now()
+        self._librespot_device = None
+        return None
+
+    def can_update(self, last_time: datetime, seconds_to_wait: int) -> True:
+        if(last_time is None): return True
+        current_time = datetime.now()
+        time_difference = current_time - last_time
+        if time_difference.total_seconds() >= seconds_to_wait:
+            return True
+        else:
+            return False
+        
     def pause_song_if_necessary(self):
         try:
-            sp = self.get_spotify_object()
-            is_librespot_device_playing = self.is_librespot_playing(sp)
-            self.logger.info(f"is_librespot_device_playing: {is_librespot_device_playing}")
-            if(is_librespot_device_playing):
-                librespot_device = self.get_librespot_device(sp)
-                actual_volume = librespot_device.volume_percent
-                self.last_volume = actual_volume
-                self.logger.info(f"actual_volume: {actual_volume}")
-                new_volume = int(actual_volume*self.volume_decrease)
-                self.logger.info(f"New Volume : {new_volume}")
-                sp.volume(new_volume)
-                self.wasPaused = True
-                time.sleep(0.5)
+            sp = self.sp
+            is_playing = self.update_is_playing(sp)
+            if(not is_playing): return
+
+            librespot_device = self.update_librespot_device(sp)
+            if(librespot_device is None or not librespot_device.is_active): return
+
+            self.logger.info(f"Spotify is playing on LibreSpot Device")
+            
+            actual_volume = librespot_device.volume_percent
+            self.last_volume = actual_volume
+            self.logger.info(f"Actual Volume: {actual_volume}")
+            new_volume = int(actual_volume*self.volume_decrease)
+            self.logger.info(f"New Volume : {new_volume}")
+            sp.volume(new_volume)
+            self.wasPaused = True
+            time.sleep(0.5)
         except:
-            print("[Error] Not able to pause song")   
+            print("[Error] Not able to pause song")
 
     def play_song(self):
         try:
-            sp = self.get_spotify_object()
+            sp = self.sp
             if(self.wasPaused):
                 #sp.start_playback()
-                librespot_device = self.get_librespot_device(sp)
                 self.logger.info(f"Setting volumen again to: {self.last_volume}")
                 sp.volume(self.last_volume)
                 self.wasPaused = False
         except:
-            print("[Error] Not able to authorize profile")   
-
-    def is_playing(self,sp=None):
-        try:
-            if(sp is None): sp = self.get_spotify_object()
-            playing_track = sp.current_user_playing_track()
-            if(playing_track!=None):
-                isPlaying = playing_track[u'is_playing']
-                return isPlaying
-        except:
-            print("[Error] Not able to get song status")    
-        return False
-
-    def get_devices(self,sp=None) -> list[SpotifyDevice]:
-        if(sp is None): sp = self.get_spotify_object()
-        devices_list = sp.devices()
-        spotifyDevice_list = SpotifyDevice.from_json_list(devices_list)
-        return spotifyDevice_list
-    
-    def get_librespot_device(self,sp=None):
-        if(sp is None): sp = self.get_spotify_object()
-        spotifyDevice_list = self.get_devices(sp)
-        for spotifyDevice in spotifyDevice_list:
-            if(spotifyDevice.name == self.home_spotify_name):
-                return spotifyDevice
-        return None
-    
-    def get_librespot_id(self,sp=None):
-        if(sp is None): sp = self.get_spotify_object()
-        spotifyDevice_list = self.get_devices(sp)
-        for spotifyDevice in spotifyDevice_list:
-            if(spotifyDevice.name == self.home_spotify_name):
-                return spotifyDevice.id
-        return None
-    
-    def is_librespot_playing(self,sp=None):
-        if(sp is None): sp = self.get_spotify_object()
-        librespot_device = self.get_librespot_device(sp)
-        if(librespot_device is not None and librespot_device.is_active):
-            playing_track = sp.current_user_playing_track()
-            if(playing_track is not None):
-                isPlaying = playing_track[u'is_playing']
-                return isPlaying    
-        return False        
-
-    def test(self):
-        self.pause_song_if_necessary()
+            print("[Error] Not able to authorize profile")

@@ -88,7 +88,6 @@ class SpeakerManager():
             self.excecute_command(command_name, topic_recieved, message_recieved)
             return
 
-
     def excecute_command(self, command_name:str, topic_recieved:str, message:str):
         if("Spotify Event" == command_name):
             librespot_changed = self.librespot.update_status(message)
