@@ -32,7 +32,7 @@ class SpotifyConfig:
         self.client_id = spotify_dict.get('clientId', None)
         self.client_secret = spotify_dict.get('clientSecret', None)
         self.redirect_url = spotify_dict.get('redirectUrl', None)
-        self.home_spotify_name = "Spotify-HomeServer"
+        self.home_spotify_name = spotify_dict.get('librespotName', None)
         self.scope = "user-read-playback-state user-modify-playback-state user-top-read user-read-recently-played"
 
     @classmethod

@@ -42,6 +42,6 @@
         "clientId":"00000000000000000000000000000000",
         "clientSecret":"00000000000000000000000000000000",
         "redirectUrl":"http://localhost:8000",
-        "raspotifyId":"0000000000000000000000000000000000000000"
+        "librespotName":"Spotify-HomeServer"
     }
 }
