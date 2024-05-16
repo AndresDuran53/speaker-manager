@@ -68,7 +68,7 @@ class SpotifyService:
         return sp
     
     def _update_is_playing(self, sp: spotipy.Spotify) -> bool:
-        if(not self._can_update(self._playing_last_modified,30)): return self._is_spotify_playing
+        if(not self._can_update(self._playing_last_modified,1)): return self._is_spotify_playing
 
         self.logger.info(f"Updating Spotify is_playing status")
         isPlaying = False
@@ -92,7 +92,7 @@ class SpotifyService:
         return spotifyDevice_list
     
     def _update_librespot_device(self, sp: spotipy.Spotify) -> SpotifyDevice:
-        if(not self._can_update(self._device_last_modified,10)): return self._librespot_device
+        if(not self._can_update(self._device_last_modified,1)): return self._librespot_device
 
         self.logger.info(f"Updating Spotify librespot_device object")
         spotifyDevice_list = self._get_devices(sp)
