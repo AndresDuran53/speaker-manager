@@ -24,7 +24,6 @@ class SpeakerManager():
     sounds_folder = "sounds/"
     loggin_path = "data/speakerManager.log"
     api_config_file = "data/text-to-speech-api.json"
-    audio_output_filename = "output.wav"
     configuration_completed = False
 
     def __init__(self):
@@ -68,7 +67,7 @@ class SpeakerManager():
         self.librespot = LibreSpotService(logger=self.logger)
         
         #Set TTS generator
-        self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file, logger=self.logger)
+        self.textToSpeechGenerator = TextToSpeechGenerator(self.api_config_file, sounds_folder=self.sounds_folder, logger=self.logger)
         
         self.configuration_completed = True
 
@@ -116,8 +115,7 @@ class SpeakerManager():
             VolumeController.set_volume(message)
 
     def generate_tts_audio(self, message_recieved, rooms, language="en"):
-        audioGeneratedName = f"{self.sounds_folder}/{self.audio_output_filename}"
-        file_generated = self.textToSpeechGenerator.generate_audio_file(message_recieved, audioGeneratedName, language)
+        file_generated = self.textToSpeechGenerator.generate_audio_file(message_recieved, language)
         if(file_generated):
             self.audio_controller.add_new_audio_request("tts",rooms)
 

@@ -9,10 +9,12 @@ class TextToSpeechGenerator:
     max_characters_per_day = 30000
     max_characters_per_month = 900000
     used_chars_filename = 'data/charactersSended.txt'
+    audio_output_filename = "output.wav"
 
-    def __init__(self,config_file, logger:CustomLogging):
+    def __init__(self, config_file, sounds_folder:str, logger:CustomLogging):
         self.logger = logger
         self.logger.info("Creating TextToSpeechGenerator Controller...")
+        self.sounds_folder = sounds_folder
         self.set_google_as_tts_handler(config_file)
         self.storage_characters_used = CSVStorage(self.used_chars_filename)
 
@@ -42,7 +44,8 @@ class TextToSpeechGenerator:
         character_count = len(text_to_send)
         self.storage_characters_used.increase_value_for_today_by(character_count)
 
-    def generate_audio_file(self,text_to_send,output_filename,language="en"):
+    def generate_audio_file(self,text_to_send,language="en"):
+        output_filename = f"{self.sounds_folder}/{self.audio_output_filename}"
         if(not self.can_synthesize_audio(text_to_send)):
             print("Cannot synthesize audio. Character limit reached.")
             return False
