@@ -151,7 +151,11 @@ class SpeakerManager():
 
         self.try_to_turn_on_speakers(audio_id,speakers)
         if(self.use_spotify_service):
-            self.spotify_service.decrease_volume_if_necessary()
+            if(self.librespot.is_active()):
+                self.logger.info(f"LibreSpot is playing something")
+                self.spotify_service.decrease_volume_if_necessary()
+            else:
+                self.logger.info(f"LibreSpot is not active")
         #time.sleep(2)
         self.executeAplay(speakers,audio_config)
 

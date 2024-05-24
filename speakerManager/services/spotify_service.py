@@ -3,6 +3,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from utils.custom_logging import CustomLogging
 from datetime import datetime
 import time
+import threading
 
 class SpotifyDevice:
     def __init__(self, device_dict):
@@ -104,6 +105,25 @@ class SpotifyService:
         self._device_last_modified = datetime.now()
         self._librespot_device = None
         return None
+    
+    def _update_device_with_event(self, sp, event):
+        self._update_librespot_device(sp)
+        event.set()
+    
+    def _update_librespot_device_on_thread(self, sp: spotipy.Spotify) -> SpotifyDevice:
+        device_updated_event = threading.Event()
+        update_thread = threading.Thread(target=self._update_device_with_event, args=(sp, device_updated_event))
+        update_thread.start()
+
+
+        # Esperar 1 segundo para ver si la función ha terminado
+        if device_updated_event.wait(timeout=1.5):
+            self.logger.info(f"Spotify librespot_device object Updated on Thread")
+            return self._librespot_device
+        else:
+            self.logger.error("Spotify update_librespot_device timed out")
+            return None
+
 
     def _can_update(self, last_time: datetime, seconds_to_wait: int) -> True:
         if(last_time is None): return True
@@ -116,11 +136,12 @@ class SpotifyService:
         
     def is_librespot_playing(self) -> bool:
         sp = self.sp
-        is_playing = self._update_is_playing(sp)
-        if(not is_playing): return False
-        self.logger.info(f"Spotify is playing")
+        #is_playing = self._update_is_playing(sp)
+        #if(not is_playing): return False
+        #self.logger.info(f"Spotify is playing")
 
-        librespot_device = self._update_librespot_device(sp)
+        #librespot_device = self._update_librespot_device(sp)
+        librespot_device = self._update_librespot_device_on_thread(sp)
         if(librespot_device is None or not librespot_device.is_active): return False
 
         self.logger.info(f"Spotify is playing on LibreSpot Device")
