@@ -184,7 +184,7 @@ class SpeakerManager():
             for speaker_aux in pending_speakers:
                 self.logger.info(f"Turning on speaker: {speaker_aux.id}")
                 speaker_aux.turn_on_speaker()
-            time.sleep(0.5)
+            time.sleep(1.5)
             count_tries+=1
             pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
 
