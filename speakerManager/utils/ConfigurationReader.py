@@ -2,7 +2,7 @@ import json
 
 class ConfigurationReader():
 
-    fileName = "data/configuration.json"
+    fileName = "conf/configuration.json"
 
     def __init__(self):
         pass

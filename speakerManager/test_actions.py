@@ -19,7 +19,7 @@ import time
 
 import paho.mqtt.client as mqtt
 
-CONFIG_FILE = "data/configuration.json"
+CONFIG_FILE = "conf/configuration.json"
 
 
 # ---------------------------------------------------------------------------

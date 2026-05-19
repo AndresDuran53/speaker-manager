@@ -22,8 +22,8 @@ class SpeakerManager():
     speaker_list: list[SpeakerDevice] = []
     chromecast_list: list[ChromecastAudioDevice] = []
     sounds_folder = "sounds/"
-    loggin_path = "data/speakerManager.log"
-    api_config_file = "data/text-to-speech-api.json"
+    loggin_path = "logs/speakerManager.log"
+    api_config_file = "conf/text-to-speech-api.json"
     configuration_completed = False
 
     CMD_SPOTIFY_EVENT = "Spotify Event"

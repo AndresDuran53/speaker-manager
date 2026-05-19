@@ -8,7 +8,7 @@ class TextToSpeechGenerator:
     max_characters_per_requests = 1500
     max_characters_per_day = 30000
     max_characters_per_month = 900000
-    used_chars_filename = 'data/charactersSended.txt'
+    used_chars_filename = 'conf/charactersSended.txt'
     audio_output_filename = "output.wav"
 
     def __init__(self, config_file, sounds_folder:str, logger:CustomLogging):
