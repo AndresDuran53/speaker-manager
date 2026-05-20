@@ -1,7 +1,7 @@
 import threading
 import os
 from subprocess import Popen
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 
 class AudioConfig:
     def __init__(self, id=None, file_name=None):

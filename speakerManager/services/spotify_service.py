@@ -1,6 +1,6 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 from datetime import datetime
 import time
 import threading
@@ -46,7 +46,7 @@ class SpotifyService:
     _librespot_device = None
     _device_last_modified: datetime = None
 
-    def __init__(self, config_data, logger=CustomLogging("logs/spotify.log")):
+    def __init__(self, config_data, logger=CustomLogging(component_name="Spotify")):
         self.logger = logger
         self.logger.info("Creating Spotify Service...")
         self.config = SpotifyConfig.from_json(config_data)

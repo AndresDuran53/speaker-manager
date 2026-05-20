@@ -2,3 +2,4 @@ paho-mqtt==1.6.1
 spotipy==2.23.0
 google-cloud-texttospeech==2.14.1
 PyChromecast==13.0.7
+zarus-core @ git+https://github.com/andresduran53/zarus-core.git@v0.3.1

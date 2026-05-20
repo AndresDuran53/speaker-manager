@@ -1,4 +1,4 @@
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 
 class Room:
     name: str

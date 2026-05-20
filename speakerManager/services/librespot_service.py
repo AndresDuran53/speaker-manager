@@ -1,5 +1,5 @@
 from datetime import datetime
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 
 class LibreSpotService:
     _audio_id: str = "spotifyPlaying"
@@ -8,7 +8,7 @@ class LibreSpotService:
     _last_modified: datetime
     _last_active_signal: datetime
 
-    def __init__(self, status = "stop", is_active = False, logger=CustomLogging("logs/librespot.log")) -> None:
+    def __init__(self, status = "stop", is_active = False, logger=CustomLogging(component_name="LibreSpot")) -> None:
         self.logger = logger
         self.logger.info("Creating LibreSpot Service...")
         self._status = status

@@ -1,7 +1,7 @@
 import os
 from services.google_tts_service import GoogleTTSService
 from utils.csv_storage import CSVStorage
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 
 class TextToSpeechGenerator:
     tts_handler = None

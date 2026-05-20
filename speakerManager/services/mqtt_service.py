@@ -1,4 +1,4 @@
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 import paho.mqtt.client as mqtt
 
 class MqttConfig:
@@ -32,7 +32,7 @@ class MqttService:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, mqtt_config:MqttConfig=None, process_message=None, client_id="SpeakerManager", logger=CustomLogging("logs/mqtt.log")):
+    def __init__(self, mqtt_config:MqttConfig=None, process_message=None, client_id="SpeakerManager", logger=CustomLogging(component_name="Mqtt")):
         if not hasattr(self, 'client'):
             if mqtt_config is None or process_message is None or client_id is None:
                 raise ValueError('MQTT configuration not found at object creation')

@@ -1,8 +1,8 @@
-from utils.ConfigurationReader import ConfigurationReader
+from zarus_core import ConfigurationReader
 from services.spotify_service import SpotifyService
 import time
 
-config_data = ConfigurationReader().read_config_file()
+config_data = ConfigurationReader.read_config_file("conf/configuration.json")
 spotify_service = SpotifyService(config_data)
 
 devices = spotify_service._get_devices()

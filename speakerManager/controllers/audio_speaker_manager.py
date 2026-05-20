@@ -1,5 +1,5 @@
 from devices.speaker_device import SpeakerDevice
-from utils.custom_logging import CustomLogging
+from zarus_core import CustomLogging
 
 class SpeakerAudioQueue():
     speaker: SpeakerDevice

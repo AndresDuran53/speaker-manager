@@ -2,8 +2,7 @@ import time
 from devices.speaker_device import SpeakerDevice
 from devices.chromecast_device import ChromecastAudioDevice
 from devices.speaker_interface import Speaker
-from utils.ConfigurationReader import ConfigurationReader
-from utils.custom_logging import CustomLogging
+from zarus_core import ConfigurationReader, CustomLogging
 from services.mqtt_service import MqttService, MqttConfig
 from services.spotify_service import SpotifyService
 from services.librespot_service import LibreSpotService
@@ -35,14 +34,15 @@ class SpeakerManager():
     ASSISTANT_RECOGNITION_AUDIO_ID = "assistantRecognition"
 
     def __init__(self):
-        self.logger: CustomLogging = CustomLogging(self.loggin_path)
+        CustomLogging.configure_project(project_name="speakerManager", log_file=self.loggin_path)
+        self.logger: CustomLogging = CustomLogging(component_name="SpeakerManager")
         self.logger.info("Creating Speaker Manager...")
         self.update_config_values()
         self.logger.info("Speaker Manager Created")
 
     def update_config_values(self):
         self.logger.info("Updating configuration Values")
-        config_data = ConfigurationReader().read_config_file()
+        config_data = ConfigurationReader.read_config_file("conf/configuration.json")
         SpeakerManager.validate_config_values(config_data)
 
         #Setting Mqtt config
