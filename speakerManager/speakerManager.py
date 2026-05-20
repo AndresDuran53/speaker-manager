@@ -35,7 +35,7 @@ class SpeakerManager():
     ASSISTANT_RECOGNITION_AUDIO_ID = "assistantRecognition"
 
     def __init__(self):
-        self.logger = CustomLogging(self.loggin_path)
+        self.logger: CustomLogging = CustomLogging(self.loggin_path)
         self.logger.info("Creating Speaker Manager...")
         self.update_config_values()
         self.logger.info("Speaker Manager Created")
@@ -173,20 +173,24 @@ class SpeakerManager():
         self.start_playback(speakers, audio_config)
 
     def wake_speakers(self, audio_id: str, speakers_list: list[SpeakerDevice]):
+        speakers_list_copy = speakers_list[:]
         self.logger.info("Turning on Speakers...")
         pending_speakers = []
-        for speaker_unknow in speakers_list:
+        for speaker_unknow in speakers_list_copy:
             self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
             if (not speaker_unknow.get_status()):
                 pending_speakers.append(speaker_unknow)
         count_tries = 0
         while (len(pending_speakers)>0) and count_tries<4:
             for speaker_aux in pending_speakers:
-                self.logger.info(f"Turning on speaker: {speaker_aux.id}")
-                speaker_aux.turn_on_speaker()
+                if speaker_aux.is_turn_on_requested():
+                    self.logger.info(f"Turning on speaker: {speaker_aux.id}")
+                    speaker_aux.turn_on_speaker()
+                else:
+                    self.logger.info(f"Turn off requested for speaker: {speaker_aux.id}, removing from pending list")
             time.sleep(0.5 * count_tries)
             count_tries+=1
-            pending_speakers = [speaker for speaker in speakers_list if not speaker.get_status()]
+            pending_speakers = [speaker for speaker in speakers_list_copy if not speaker.get_status()]
 
     def reproduce_on_chromecasts(self, speakers: list[Speaker], audio_config:AudioConfig):
         self.logger.info(f"[Chromecasts] Reproducing Audio on Chromecasts: {speakers}")

@@ -24,7 +24,7 @@ class LibreSpotService:
         elif(message_recieved == "start" or message_recieved == "play" or message_recieved == "pause" or message_recieved == "change"):
             new_active_state = True
 
-        if(message_recieved == "start" or message_recieved == "play"):
+        if(message_recieved == "start" or message_recieved == "play" or message_recieved == "sessionconnected"):
             self._last_active_signal = datetime.now()
 
         if(new_active_state is not None and new_active_state != self._is_active):
@@ -51,7 +51,7 @@ class LibreSpotService:
             current_time = datetime.now()
             time_difference = current_time - self._last_active_signal
             if time_difference.total_seconds() >= 3600:
-                self.logger.info(f"LibreSpot stopping due timed out | Last_active_signal: {self._last_active_signal}")
+                self.logger.info(f"LibreSpot stopping due timed out | Status: {self._status} | Last_active_signal: {self._last_active_signal}")
                 self.execute_time_out()
                 return True
         return False

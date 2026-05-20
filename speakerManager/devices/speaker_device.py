@@ -1,5 +1,6 @@
 from devices.speaker_interface import Speaker
 from services.mqtt_service import MqttService
+import threading
 import time
 
 class SpeakerDevice(Speaker):
@@ -13,6 +14,8 @@ class SpeakerDevice(Speaker):
         self.subscribe_topic = subscribe_topic
         self.speaker_status = False
         self.audio_list = []
+        self._action_lock = threading.Lock()
+        self._turn_on_requested = None
         self.mqtt_service = MqttService()
         self.mqtt_service.add_subscription(self.subscribe_topic)
 
@@ -22,10 +25,18 @@ class SpeakerDevice(Speaker):
         self.mqtt_service.send_message(speakerPublishTopic,message)
 
     def turn_on_speaker(self):
+        with self._action_lock:
+            self._turn_on_requested = True
         self._send_message_to_speaker("1")
 
     def turn_off_speaker(self):
+        with self._action_lock:
+            self._turn_on_requested = False
         self._send_message_to_speaker("0")
+
+    def is_turn_on_requested(self):
+        with self._action_lock:
+            return self._turn_on_requested
 
     def get_status(self):
         return self.speaker_status
