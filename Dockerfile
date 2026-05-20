@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.10-slim-buster
+FROM python:3.11-slim-buster
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV TZ="America/Costa_Rica"
@@ -13,6 +13,7 @@ RUN useradd -u 1000 -g sneer sneer
 # Install package dependencies
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
+        git \
         alsa-utils \
         libsndfile1-dev \
         pulseaudio-utils \

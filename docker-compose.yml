@@ -1,18 +1,25 @@
 version: '3'
 services:
+# Speaker Manager - Controlador de altavoces y sonido
   speaker-manager:
     build:
       context: ./speaker-manager
       dockerfile: Dockerfile
     image: speaker-manager-image
     container_name: speaker-manager
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     restart: unless-stopped
-    #privileged: true
     volumes:
       - /run/user/1000/pulse:/run/user/1000/pulse
       - /etc/machine-id:/etc/machine-id
       - ~/.config/pulse/cookie:/home/sneer/.config/pulse/cookie
-      #- /usr/local/speakerManager/logs:/logs
+      - /usr/local/docker_volumes/speakerManager/logs:/home/logs
+      #- /usr/local/docker_volumes/speakerManager/conf:/conf
     environment:
       - TZ=America/Costa_Rica
     network_mode: host
+  # [END speaker-manager]
