@@ -86,6 +86,7 @@ class SpeakerManager():
         #If the message is a command to a speaker
         speaker_aux:SpeakerDevice = SpeakerDevice.get_by_subs_topic(self.speaker_list, topic_recieved)
         if(speaker_aux):
+            self.logger.info(f"Speaker status update | topic: {topic_recieved} | message: {message_recieved}")
             speaker_aux.update_status_from_message(message_recieved)
             return
 
@@ -96,6 +97,7 @@ class SpeakerManager():
             return
 
     def execute_command(self, command_name:str, topic_recieved:str, message:str):
+        self.logger.info(f"Command triggered: [{command_name}] | topic: {topic_recieved} | message: {message}")
         if(self.CMD_SPOTIFY_EVENT == command_name):
             librespot_changed = self.librespot.update_status(message)
             if(librespot_changed):
@@ -246,6 +248,7 @@ class SpeakerManager():
         removed_audio_speakers = self.audio_speaker_manager.remove_audio_from_all_speakers(audio_id)
         empty_speakers = self.audio_speaker_manager.get_empty_speakers()
         speakers_to_turn_off = [speaker_aux for speaker_aux in removed_audio_speakers if speaker_aux in empty_speakers]
+        self.logger.info(f"Audio finished: [{audio_id}] | affected speakers: {[s.id for s in removed_audio_speakers]} | empty speakers: {[s.id for s in empty_speakers]} | to turn off: {[s.id for s in speakers_to_turn_off]}")
         for speaker_aux in speakers_to_turn_off:
             if(audio_id != self.ASSISTANT_RECOGNITION_AUDIO_ID):
                 self.logger.info(f"Turning off {speaker_aux.id}")

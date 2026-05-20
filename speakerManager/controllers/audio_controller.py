@@ -80,10 +80,12 @@ class AudioController:
         return self.queue_files_playing.get(audio_id)!=None
     
     def link_process_with_audio(self, audio_id, sub_process):
+        self.logger.info(f"Audio started playing: [{audio_id}]")
         self.queue_files_playing[audio_id]=sub_process
 
     def remove_playing_audio(self, audio_id:str):
         if (audio_id in self.queue_files_playing):
+            self.logger.info(f"Audio removed from playing queue: [{audio_id}]")
             del self.queue_files_playing[audio_id]
 
     def get_audio_config_by_id(self, audio_id):

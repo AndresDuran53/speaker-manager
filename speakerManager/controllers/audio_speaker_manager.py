@@ -54,16 +54,19 @@ class AudioSpeakerManager():
                     return False
                 else:
                     speaker_queue_aux.add_new_audio(audio_id)
+                    self.logger.info(f"Audio [{audio_id}] added to existing speaker [{speaker.get_id()}] | pending: {speaker_queue_aux.get_remaining_audios()}")
                     return True
         self.playing_speakers.append(SpeakerAudioQueue(speaker,[audio_id]))
+        self.logger.info(f"Speaker [{speaker.get_id()}] registered with audio [{audio_id}]")
         return True
-    
+
     def remove_audio_from_all_speakers(self,audio_id):
         speaker_list: list[SpeakerDevice] = []
         for speaker_queue_aux in self.playing_speakers:
             if audio_id in speaker_queue_aux.get_remaining_audios():
                 speaker_queue_aux.remove_audio(audio_id)
                 speaker_list.append(speaker_queue_aux.get_speaker())
+        self.logger.info(f"Audio [{audio_id}] removed from speakers: {[s.get_id() for s in speaker_list]}")
         return speaker_list
 
     

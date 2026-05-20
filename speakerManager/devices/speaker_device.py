@@ -1,5 +1,6 @@
 from devices.speaker_interface import Speaker
 from services.mqtt_service import MqttService
+from zarus_core import CustomLogging
 import threading
 import time
 
@@ -16,6 +17,7 @@ class SpeakerDevice(Speaker):
         self.audio_list = []
         self._action_lock = threading.Lock()
         self._turn_on_requested = None
+        self.logger = CustomLogging(component_name=f"Speaker.{id or 'unknown'}")
         self.mqtt_service = MqttService()
         self.mqtt_service.add_subscription(self.subscribe_topic)
 
@@ -27,11 +29,13 @@ class SpeakerDevice(Speaker):
     def turn_on_speaker(self):
         with self._action_lock:
             self._turn_on_requested = True
+        self.logger.info(f"[{self.id}] Turn on requested")
         self._send_message_to_speaker("1")
 
     def turn_off_speaker(self):
         with self._action_lock:
             self._turn_on_requested = False
+        self.logger.info(f"[{self.id}] Turn off requested")
         self._send_message_to_speaker("0")
 
     def is_turn_on_requested(self):
@@ -49,7 +53,7 @@ class SpeakerDevice(Speaker):
             aux_status = True
         if(aux_status != self.speaker_status):
             self.speaker_status = aux_status
-            print(f"Speaker status updated: {self.speaker_status}")
+            self.logger.info(f"[{self.id}] Status updated: {self.speaker_status}")
         return self.speaker_status
 
     def add_audio(self, audio_id):
@@ -75,6 +79,7 @@ class SpeakerDevice(Speaker):
         return msg
     
     def update_status_from_message(self, message):
+        self.logger.info(f"[{self.id}] Status message received: '{message}'")
         template_parts = self.template.split("%_v%")
         start_index = message.index(template_parts[0]) + len(template_parts[0])
         end_index = message.index(template_parts[1], start_index)
