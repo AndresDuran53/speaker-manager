@@ -185,8 +185,8 @@ class SpeakerManager():
         count_tries = 0
         while (len(pending_speakers)>0) and count_tries<4:
             for speaker_aux in pending_speakers:
-                if not speaker_aux.is_turn_on_requested():
-                    self.logger.info(f"Turn off requested for speaker: {speaker_aux.id}, removing from pending list")
+                if (speaker_aux.is_turn_on_requested() != None or speaker_aux.is_turn_on_requested() == False):
+                    self.logger.info(f"Turn off requested for speaker: {speaker_aux.id}, value {speaker_aux.is_turn_on_requested()}, removing from pending list")
                 else:
                     self.logger.info(f"Turning on speaker: {speaker_aux.id}")
                     speaker_aux.turn_on_speaker()
