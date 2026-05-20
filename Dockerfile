@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.11-slim-buster
+FROM python:3.10-slim-buster
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV TZ="America/Costa_Rica"
