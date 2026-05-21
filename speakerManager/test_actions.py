@@ -13,13 +13,14 @@ file is resolved correctly:
 """
 
 import argparse
-import json
 import sys
 import time
 
 import paho.mqtt.client as mqtt
+from zarus_core import ConfigurationReader, CustomLogging
 
 CONFIG_FILE = "conf/configuration.json"
+logger: CustomLogging = None  # initialised in main()
 
 
 # ---------------------------------------------------------------------------
@@ -28,10 +29,10 @@ CONFIG_FILE = "conf/configuration.json"
 
 def load_config() -> dict:
     try:
-        with open(CONFIG_FILE) as f:
-            return json.load(f)
+        return ConfigurationReader.read_config_file(CONFIG_FILE)
     except FileNotFoundError:
-        sys.exit(f"Error: config file not found at '{CONFIG_FILE}'. Run this script from the repository root.")
+        logger.error(f"Config file not found at '{CONFIG_FILE}'. Run this script from the repository root.")
+        sys.exit(1)
 
 
 def find_device(config: dict, speaker_id: str) -> dict | None:
@@ -51,7 +52,12 @@ def build_speaker_message(device: dict, power: str) -> str:
 # MQTT connection
 # ---------------------------------------------------------------------------
 
-def connect_mqtt(config: dict) -> mqtt.Client:
+DRY_RUN = False  # set to True via --dry-run flag
+
+
+def connect_mqtt(config: dict) -> mqtt.Client | None:
+    if DRY_RUN:
+        return None
     mqtt_cfg = config["mqtt"]
     client = mqtt.Client(client_id="SpeakerManagerTest", clean_session=True)
     client.username_pw_set(mqtt_cfg["mqttUser"], mqtt_cfg["mqttPass"])
@@ -60,14 +66,16 @@ def connect_mqtt(config: dict) -> mqtt.Client:
     return client
 
 
-def publish_and_disconnect(client: mqtt.Client, topic: str, message: str):
-    print(f"  → topic:   {topic}")
-    print(f"  → message: {message}")
+def publish_and_disconnect(client: mqtt.Client | None, topic: str, message: str):
+    if DRY_RUN:
+        logger.info(f"[DRY-RUN] Would publish | topic: {topic} | message: {message}")
+        return
+    logger.info(f"Publishing | topic: {topic} | message: {message}")
     client.publish(topic, message, qos=1)
     time.sleep(0.5)  # let the QoS-1 handshake complete before disconnecting
     client.loop_stop()
     client.disconnect()
-    print("Done.")
+    logger.info("Done.")
 
 
 # ---------------------------------------------------------------------------
@@ -75,69 +83,70 @@ def publish_and_disconnect(client: mqtt.Client, topic: str, message: str):
 # ---------------------------------------------------------------------------
 
 def action_list(config: dict):
-    print("\n=== Speakers ===")
+    logger.info("=== Speakers ===")
     for d in config.get("devices", []):
-        print(f"  {d['id']}  ({d['type']})")
-        print(f"      publish:   {d['publishTopic']}")
-        print(f"      subscribe: {d['subscribeTopic']}")
+        logger.info(f"  {d['id']}  ({d['type']})  publish: {d['publishTopic']}  subscribe: {d['subscribeTopic']}")
 
     cc = config.get("chromecasts", {})
     if cc.get("devices"):
-        print("\n=== Chromecasts ===")
+        logger.info("=== Chromecasts ===")
         for name in cc["devices"]:
-            print(f"  {name}")
+            logger.info(f"  {name}")
 
-    print("\n=== Rooms ===")
+    logger.info("=== Rooms ===")
     for r in config.get("rooms", []):
         speakers = ", ".join(r["devices"]) or "(none)"
-        print(f"  {r['name']}  →  {speakers}")
+        logger.info(f"  {r['name']}  →  {speakers}")
 
-    print("\n=== Audio IDs ===")
+    logger.info("=== Audio IDs ===")
     for a in config.get("audios", []):
-        print(f"  {a['id']:<30}  {a['file_name']}")
+        logger.info(f"  {a['id']:<30}  {a['file_name']}")
 
 
 def action_speaker_on(client: mqtt.Client, config: dict, speaker_id: str):
     device = find_device(config, speaker_id)
     if device is None:
-        sys.exit(f"Error: speaker '{speaker_id}' not found. Run 'list' to see available speakers.")
-    print(f"Turning ON speaker '{speaker_id}'")
+        logger.error(f"Speaker '{speaker_id}' not found. Run 'list' to see available speakers.")
+        sys.exit(1)
+    logger.info(f"Turning ON speaker '{speaker_id}'")
     publish_and_disconnect(client, device["publishTopic"], build_speaker_message(device, "1"))
 
 
 def action_speaker_off(client: mqtt.Client, config: dict, speaker_id: str):
     device = find_device(config, speaker_id)
     if device is None:
-        sys.exit(f"Error: speaker '{speaker_id}' not found. Run 'list' to see available speakers.")
-    print(f"Turning OFF speaker '{speaker_id}'")
+        logger.error(f"Speaker '{speaker_id}' not found. Run 'list' to see available speakers.")
+        sys.exit(1)
+    logger.info(f"Turning OFF speaker '{speaker_id}'")
     publish_and_disconnect(client, device["publishTopic"], build_speaker_message(device, "0"))
 
 
 def action_play(client: mqtt.Client, audio_id: str, room: str):
-    print(f"Playing '{audio_id}' in room '{room}'")
+    logger.info(f"Playing '{audio_id}' in room '{room}'")
     publish_and_disconnect(client, f"speaker-message/{room}/reproduce", audio_id)
 
 
 def action_stop(client: mqtt.Client, audio_id: str, room: str):
-    print(f"Stopping '{audio_id}' in room '{room}'")
+    logger.info(f"Stopping '{audio_id}' in room '{room}'")
     publish_and_disconnect(client, f"speaker-message/{room}/stop", audio_id)
 
 
 def action_tts(client: mqtt.Client, text: str, room: str, lang: str):
     suffix = "tts" if lang == "en" else "tts-es"
-    print(f"TTS ({lang}) in room '{room}': \"{text}\"")
+    logger.info(f"TTS ({lang}) in room '{room}': \"{text}\"")
     publish_and_disconnect(client, f"speaker-message/{room}/{suffix}", text)
 
 
 def action_volume(client: mqtt.Client, value: int):
     if not 0 <= value <= 100:
-        sys.exit("Error: volume must be between 0 and 100.")
-    print(f"Setting volume to {value}")
+        logger.error("Volume must be between 0 and 100.")
+        sys.exit(1)
+    logger.info(f"Setting volume to {value}")
     publish_and_disconnect(client, "speaker-message/set-volume", str(value))
 
 
 def action_spotify(client: mqtt.Client, event: str):
-    print(f"Sending Spotify event: '{event}'")
+    logger.info(f"Sending Spotify event: '{event}'")
     publish_and_disconnect(client, "spotify/event", event)
 
 
@@ -149,6 +158,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="SpeakerManager test client — sends MQTT commands to the running system.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "-n", "--dry-run",
+        action="store_true",
+        help="Log what would be sent without connecting to the broker or publishing anything.",
     )
     sub = parser.add_subparsers(dest="action", required=True)
 
@@ -186,8 +200,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    global logger
+    CustomLogging.configure_project(project_name="test_actions", force_reconfigure=True)
+    logger = CustomLogging(component_name="TestActions")
+
     args = build_parser().parse_args()
     config = load_config()
+
+    if args.dry_run:
+        global DRY_RUN
+        DRY_RUN = True
+        logger.info("Dry-run mode enabled — no messages will be published.")
 
     if args.action == "list":
         action_list(config)
