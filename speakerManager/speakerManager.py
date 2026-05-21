@@ -182,6 +182,8 @@ class SpeakerManager():
             self.audio_speaker_manager.add_playing_speaker(speaker_unknow,audio_id)
             if (not speaker_unknow.get_status()):
                 pending_speakers.append(speaker_unknow)
+                speaker_unknow.set_turn_on_requested(True)
+                self.logger.info(f"Turn on requested for speaker: {speaker_unknow.id}, value {speaker_unknow.is_turn_on_requested()}")
         count_tries = 0
         while (len(pending_speakers)>0) and count_tries<4:
             for speaker_aux in pending_speakers:

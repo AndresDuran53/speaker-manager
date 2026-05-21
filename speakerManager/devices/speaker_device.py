@@ -27,16 +27,18 @@ class SpeakerDevice(Speaker):
         self.mqtt_service.send_message(speakerPublishTopic,message)
 
     def turn_on_speaker(self):
-        with self._action_lock:
-            self._turn_on_requested = True
+        self.set_turn_on_requested(True)
         self.logger.info(f"[{self.id}] Turn on requested")
         self._send_message_to_speaker("1")
 
     def turn_off_speaker(self):
-        with self._action_lock:
-            self._turn_on_requested = False
+        self.set_turn_on_requested(False)
         self.logger.info(f"[{self.id}] Turn off requested")
         self._send_message_to_speaker("0")
+
+    def set_turn_on_requested(self, value: bool):
+        with self._action_lock:
+            self._turn_on_requested = value
 
     def is_turn_on_requested(self):
         with self._action_lock:
